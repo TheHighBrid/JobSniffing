@@ -1,193 +1,47 @@
 # JobSniffing
-# A Strong Foundation Plan for an Android First Job Auto Apply Repo
 
-## The clearest conclusion
+JobSniffing is an Android-first, local-first job discovery and review queue. It follows a simple rule: **API first, browser last, human approval before real submission**.
 
-The strongest path is not to build a bigger all-in-one bot. It is to build a local first, API first, browser last system with a hard review gate, a small state machine, one source of truth for application tracking, and an optional automation layer that can fail safely without breaking the rest of the app. Your own repos already point in that direction. `JobTomatik` explicitly uses a safety first approval workflow and blocks real submission by default, but it also pulls in a broad stack that includes FastAPI, SQLAlchemy, Celery, Redis, Playwright, React, Tailwind, Docker, and multiple APK artifacts in the repository root. `HunterXJob`, especially its backend, is closer to a sustainable base because it narrows the core to FastAPI, SQLAlchemy with SQLite, APScheduler, Playwright, Jinja2, explicit submission outcomes, safety rails, and a real pytest suite. The most useful outside repos reinforce the same lesson: the mature ones separate evaluation, tailoring, scanning, tracking, and applying, while the more fragile ones lean on paid APIs, desktop assumptions, or anti-bot tricks. citeturn1view0turn11view0turn24view2turn22view4turn5view3
+## What is set up
 
-If the goal is Android APK plus Termux backend plus zero recurring cost, the repo should be designed so that it remains fully useful even when browser automation is unavailable. That matters because official Playwright support is centered on Windows, Linux, and macOS, while Android automation is still described as experimental and ADB based. Community Termux setups do exist, but they rely on a Termux specific Chromium path and Node based workarounds rather than a clean first class support story. SQLite, by contrast, is almost ideal for this target because it is self contained, serverless, zero configuration, and already common on mobile systems. citeturn23search4turn23search5turn8search0turn23search1turn13search0turn13search8turn8search10
+- FastAPI app serving both JSON and a small server-rendered review UI.
+- SQLite as the only required database.
+- Deterministic local scoring with no paid API dependency.
+- Strict application status machine.
+- Fixture-backed discovery adapter contracts for Greenhouse, Lever, and Ashby shapes.
+- Termux scripts for bootstrap, run, and health checks.
+- Optional automation bridge placeholder, disabled by default.
+- Android shell placeholder for a future thin localhost wrapper.
 
-My recommendation is to treat `HunterXJob` as the better seed, not by continuing that repo directly as is, but by extracting its best ideas into a new contract first repo with a thinner UI, fewer moving parts, no Redis, no Celery, no Docker requirement, no paid LLM dependency, no separate mobile app logic in version one, and no promise that unsupported sites will auto submit. The APK should be a thin Android shell around a localhost web UI served by the Termux backend, not a second product with a second API contract to keep in sync. That is the simplest way to get rigidity, testability, Android friendliness, and zero dollar recurring cost at the same time. citeturn11view0turn12view3turn1view0turn21search2turn21search14turn21search10
+## Quick start
 
-## What your current repos already teach
-
-`JobTomatik` has the right instincts but too much architecture too early. The README says the project is intentionally conservative, with the recommended flow being hunt, queue, review, dry run, and manual approval, and says real application submission is blocked unless manually enabled. Those are good foundations. The problem is that the same repo also bundles a backend, a frontend, Docker Compose, Redis, Celery, Playwright, optional Anthropic integration, Android and Termux setup documents, build scripts, and multiple generated APK files in the root. That is a lot of failure surface for a project whose hardest problem is already browser reliability. In other words, the workflow philosophy is strong, but the implementation footprint is too wide for your target environment. citeturn1view0
-
-`HunterXJob` is much stronger conceptually. Its backend README declares a narrower stack, Python 3.11, FastAPI, SQLAlchemy with SQLite, APScheduler, Playwright, and Jinja2. More importantly, it documents concrete cycles, `job_search_cycle`, `automation_cycle`, `email_check_cycle`, and `report_generation_cycle`, plus explicit safety controls like daily submission caps, minimum inter application delay, and company blacklists. It also treats `submitted`, `blocked`, `needs_review`, and `failed` as genuinely distinct outcomes, and says that “submitted” is never reported without an observed confirmation signal. That is exactly the kind of rigid state discipline a job automation repo needs. The backend also documents 36 tests, mocked HTTP, temporary SQLite databases, and no required real network, LLM, SMTP, or IMAP access for most tests. Those are very strong design choices for a local first tool. citeturn11view0
-
-The most revealing part of `HunterXJob` may actually be the mobile README. It says the client was “originally built against assumed API shapes” and later had to be reconciled against the real backend. That is the weak foundation problem you described, stated in the repo’s own words. It means the next repo must not start with screens and flows first. It must start with the contract: domain model, state machine, adapter interface, and fixture based tests. Only after those are stable should the UI be allowed to grow. citeturn12view3
-
-There is also a smaller but important practical clue in `JobTomatik`: the Android app in beta testing used `http://127.0.0.1:8010` as the backend URL on the same device. That shows a localhost pattern is viable for your desired Android plus Termux setup. You do not need a cloud backend to make the architecture work. citeturn1view0
-
-## What the outside repos get right and where they go wrong for your constraints
-
-The best outside repos do **not** usually begin with “autonomous submit everywhere.” `career-ops` describes itself as a local open source system that evaluates offers, generates tailored PDFs, scans portals, tracks everything as a single source of truth, and explicitly says it is “not a spray and pray tool.” Its default prompts instruct the AI not to auto submit, and it warns users to comply with third party terms of service. The smaller `career-ops-plugin` is even more instructive because it makes the workflow modular in plain language: evaluate, tailor-resume, scan, triage, track, apply, research, outreach, compare. That division of labor is healthier than a single giant “apply to jobs” command. `ai-job-search` follows the same philosophy, describing a structured, drafter reviewer pipeline that evaluates fit, drafts CV and cover letters, then critiques and revises them. These projects are not simple in tooling, but they are strong in *workflow architecture*. citeturn24view2turn24view3turn6view2turn5view1turn24view0
-
-The small repos are useful as simplicity references, but several of them still miss your zero dollar, Android first target. `job-materializer` is refreshingly narrow, a terminal tool that scrapes jobs, ranks them with résumé based scoring, stores state in a local file, and saves high scoring jobs, but it requires an `OPENROUTER_API_KEY`, so it is not zero dollar by default. `AIHawk` has tests and structure, but its configuration flow includes `secrets.yaml`, and its README explicitly mentions OpenAI credit requirements. `job-app` is built around n8n, Google Drive, Google Sheets, and an external job search API such as Apify, which is too integration heavy for your stated constraints. `AutoApply AI` is architecturally ambitious, but it stacks React, Vite, FastAPI, Redis backed workers, WebSockets, FAISS, LiteLLM, Prometheus, multiple LLM provider keys, and Docker Compose, which is a poor fit for a minimal Termux first system. citeturn2view2turn7view3turn4view0turn22view3turn22view4
-
-The most fragile class of repos are the LinkedIn style bots. `GodsScion/Auto_job_applier_linkedIn` requires Python, Chrome, Undetected Chromedriver, PyAutoGUI, and settings for randomized click intervals, background mode, and stealth mode. That is a direct sign that the foundation is forced to fight a hostile surface before the core product is even stable. The OpenClaw related commercial commentary is not a neutral source, but it still states something that matches the repos: browser based job automation only works well when broken into job intake, filtering, resume choice, field detection, answer drafting, pause checkpoints, and submission logging, and the maintenance burden rises quickly because different ATS systems need custom logic. That is useful as a design warning even if one ignores the product pitch. citeturn5view3turn20view0turn20view1
-
-The cleanest cross repo lesson is this: the durable open source systems are mostly **match, review, tailor, track, then optionally apply**. The brittle systems try to jump straight to stealthy, full autonomy across dynamic sites. Your new repo should follow the first camp. citeturn24view2turn6view2turn24view0turn5view3
-
-## The constraints that should drive the architecture
-
-Your platform constraint is unusual enough that it must be treated as a first class design input. Termux is an Android terminal and Linux environment that works without rooting. That is a good fit for a local backend, local files, Python, Node, and SQLite. It is not a good fit for stacks that assume desktop Docker first workflows, or multiple support daemons that exist mostly to scale web infrastructure. citeturn8search10turn8search8turn1view0turn22view0
-
-Browser automation is the central technical risk. Official Playwright docs describe browser support on Windows, Linux, and macOS, and describe Android support as experimental, focused on automating Chrome for Android and Android WebView over ADB. Community Termux usage is possible, but the common pattern is Node.js plus Chromium from Termux’s X11 repository with explicit environment variables such as `PLAYWRIGHT_BROWSERS_PATH=0` and a Termux specific `CHROMIUM_PATH`. That means your architecture should never assume “Playwright is always available.” It should assume the opposite: browser automation is a replaceable adapter that may be unavailable, degraded, or site specific. citeturn23search5turn8search0turn23search1turn23search13
-
-Zero dollar cost rules out any required dependency on OpenAI, Anthropic, OpenRouter, paid scraping services, cloud databases, or proprietary queues. That does **not** mean you cannot have AI related features. It means the mandatory path must be deterministic and local. `HunterXJob` already proves a good pattern here: job fit scoring can fall back to dependency free weighted keyword overlap, question answering can use `difflib` based fuzzy matching, and the rest of the system can still run if the LLM is absent. The same repo also uses Ollama as a default free local provider, but crucially says non LLM parts continue working when the model is unavailable. For your next foundation, the lesson is stronger: no critical path should require any model at all. citeturn11view0
-
-The same logic applies to job discovery. Discovery should be API first wherever possible. Greenhouse’s Job Board API exposes published jobs publicly and says GET endpoints do not require authentication. Lever has an official Postings API for public job sites. Ashby has a public job posting API for currently published jobs. These should be your first discovery adapters because they reduce scraping fragility. Submission is a different story. Greenhouse’s submit application endpoint requires authentication, and Ashby’s authenticated API docs require an API key with requests, so generic candidate side submission cannot rely on employer owned official APIs. That means the clean architecture is: **discover via public endpoints where possible, then submit through site specific adapters only when you have a supported form handler**. citeturn15search0turn14search0turn14search6turn16search5turn15search3turn17search1turn16search1
-
-Finally, the APK requirement should be treated as packaging, not architecture. Official Android app build tooling is Gradle based, and Capacitor is explicitly designed to add Android to an existing web project but requires Android Studio and an Android SDK. That makes a thin shell around a local web UI the most stable design. If you try to build a full separate native client too early, you will recreate the client server contract drift already documented in `HunterXJob/mobile`. citeturn21search10turn21search2turn21search14turn12view3
-
-## The recommended repository and system design
-
-The repo should have **one core application**, not a backend repo plus a frontend repo plus a mobile repo. The core should be a FastAPI application that serves both JSON endpoints and the human UI from the same process. The UI should be server rendered HTML with a very small amount of JavaScript, enough for filters, status changes, and refresh actions. That choice removes most of the fragile frontend build chain while preserving a clean API for future use. FastAPI is a strong fit for typed local APIs, and SQLite is ideal for a mobile local database. APScheduler is enough for recurring search and queue jobs in a single process. citeturn13search2turn13search0turn13search9turn11view0
-
-The **core domain** should be small and explicit:
-
-- `Profile`, one active identity with personal info, preferences, locations, work authorization, links, and default resume
-- `ResumeAsset`, uploaded résumé files and generated variants
-- `JobSource`, source metadata such as greenhouse, lever, ashby, rss, manual
-- `JobPosting`, normalized posting snapshot
-- `Application`, one row per attempt with a strict status machine
-- `AnswerBank`, stored answers for recurring screening questions
-- `RunLog`, every scan, dry run, and submit attempt
-- `Settings`, daily cap, blacklists, dry run flag, adapter enablement
-
-The **status machine** should be the heart of the repo:
-
-`discovered -> scored -> shortlisted -> approved -> queued -> filling -> needs_review | submitted | blocked | failed`
-
-That gives you the discipline already present in `JobTomatik` and `HunterXJob`: queue based approval, dry run first, real outcome separation, and no fake “success” without a confirmation signal. citeturn1view0turn11view0
-
-The **big architectural rule** should be adapter separation:
-
-- `discovery adapters` fetch jobs
-- `scoring engine` ranks jobs
-- `content engine` chooses or generates answers and documents
-- `submission adapters` do browser or form work
-- `tracking engine` records everything
-- `ui layer` only calls contracts, never site logic directly
-
-This matters because discovery and submission have different stability profiles. Discovery can be largely API driven with Greenhouse, Lever, Ashby, and RSS or sitemap style company feeds. Submission must be treated as high risk, site specific, and optional. Unsupported sites should still be valuable: the app should score them, prepare answers, and open the apply page with prefilled guidance, rather than throwing an error. citeturn15search0turn14search0turn16search5turn11view0turn24view2
-
-A strong repo shape would look like this:
-
-```text
-job-auto-core/
-  app/
-    main.py
-    api/
-      routes_jobs.py
-      routes_applications.py
-      routes_profile.py
-      routes_settings.py
-      routes_health.py
-    web/
-      templates/
-      static/
-    domain/
-      models.py
-      enums.py
-      state_machine.py
-      schemas.py
-    services/
-      discovery_service.py
-      scoring_service.py
-      answer_bank_service.py
-      submit_service.py
-      tracking_service.py
-      scheduler_service.py
-    adapters/
-      discovery/
-        greenhouse.py
-        lever.py
-        ashby.py
-        rss.py
-        generic_html.py
-      submit/
-        noop_manual.py
-        generic_form_dryrun.py
-        playwright_bridge.py
-    db/
-      sqlite.py
-      migrations.py
-  automation_bridge/
-    package.json
-    src/
-      runner.ts
-      adapters/
-        generic_form.ts
-        greenhouse_hosted.ts
-  tests/
-    unit/
-    contract/
-    integration/
-    fixtures/
-      ats/
-        greenhouse/
-        lever/
-        ashby/
-        generic_form/
-  scripts/
-    termux-bootstrap.sh
-    termux-run.sh
-    termux-healthcheck.sh
-  android-shell/
-    capacitor/
-  docs/
-    architecture.md
-    api-contract.md
-    status-machine.md
-    termux.md
-    apk-build.md
+```sh
+python -m venv .venv
+. .venv/bin/activate
+pip install -e '.[test]'
+./scripts/termux-run.sh
 ```
 
-Two details are especially important.
+Open `http://127.0.0.1:8010`.
 
-First, the `automation_bridge/` is optional and disabled by default. This is where Playwright belongs, precisely because official support is not centered on Android Termux, while community Termux Playwright setups are mostly Node based. The main app works perfectly without it. Second, `android-shell/` is only a shell. It loads `http://127.0.0.1:<port>` and performs a health check. All real logic remains in the core app. That gives you one code path for browser, Termux, and APK. citeturn23search1turn23search5turn8search0turn1view0turn21search2turn21search14
+## API
 
-There should also be a few deliberate **non goals** for version one. Do not target LinkedIn automation first. Do not build a second native UI. Do not require Redis. Do not add vector databases. Do not add LLM provider waterfalls. Do not store APK binaries in the source root. Do not make Docker the official quick start. Those are all proven sources of scope creep or platform mismatch in the repos you studied. citeturn5view3turn22view4turn1view0turn22view0
+```sh
+curl -X POST http://127.0.0.1:8010/api/jobs \
+  -H 'content-type: application/json' \
+  -d '{"source":"manual","external_id":"1","title":"Android FastAPI Engineer","company":"Example","location":"Remote","apply_url":"https://example.com/apply","description":"Python SQLite backend"}'
+```
 
-## The testing contract and delivery path
+Then open the review queue or call `GET /api/jobs`.
 
-The new repo should be “tested before clever.” `HunterXJob` is the clearest positive example here: it documents a real pytest suite with mocked job sources, temp SQLite databases, and graceful skipping of PDF related tests when the browser is unavailable. Your next repo should take that further by making **fixture based adapter tests** the main safety net. Each discovery adapter should have saved JSON or HTML fixtures. Each submit adapter should have a local fake ATS page fixture with stable selectors, required questions, upload fields, and success or failure confirmation pages. Live internet tests should be smoke tests only, never the main regression suite. citeturn11view0
+## Safety defaults
 
-The test pyramid should have four layers.
+The app does not auto-submit applications in version one. Unsupported automation should produce `needs_review`, not `submitted`. A job can only become `submitted` after a supported adapter observes a confirmation signal.
 
-First, **unit tests** for pure logic: scoring, deduplication, state transitions, answer selection, job normalization, blacklist handling, and rate limiting. These should run fast and not need browser access. Second, **contract tests** for discovery adapters against saved Greenhouse, Lever, Ashby, and generic HTML fixtures. Third, **integration tests** that boot the FastAPI app against a temporary SQLite database and verify full flows like “discovered -> scored -> approved -> queued -> needs_review.” Fourth, **optional browser tests** that point the Playwright bridge at only local fixture pages. This last group should be able to fail or skip without making the whole repo feel broken on a phone. citeturn11view0turn15search0turn14search0turn16search5
+See:
 
-The delivery roadmap should be staged so every milestone leaves the repo useful.
-
-1. **Foundation milestone**  
-   Write `architecture.md`, `status-machine.md`, `api-contract.md`, and fixtures first. Build the SQLite schema, the FastAPI app skeleton, health endpoint, profile storage, answer bank, and the review queue. At the end of this stage, the app can store jobs and move them through states, but it does not auto submit anything yet. This is where your weak planning problem gets fixed. citeturn12view3turn11view0
-
-2. **Discovery milestone**  
-   Add Greenhouse, Lever, Ashby, and generic RSS or sitemap discovery adapters. Normalize jobs, deduplicate them, and rank them with deterministic rules. Use the public ATS surfaces first because they are the lowest fragility path. At the end of this stage, you have an app that reliably finds jobs, filters them, scores them, and tracks them locally. citeturn15search0turn14search0turn16search5turn24view2
-
-3. **Prep milestone**  
-   Add résumé selection, default answer bank lookup, dry run form mapping, and a manual “open apply page” handoff. Borrow the good zero cost pattern from `HunterXJob`: dependency free matching fallback, fuzzy question matching, and hard review gates for unknown questions. At the end of this stage, the tool already saves real time, even without full auto submit. citeturn11view0
-
-4. **Automation milestone**  
-   Introduce the optional Node Playwright bridge. Start with one generic fixture backed form adapter, then one real site family only after the fixture tests are solid. Keep the bridge disabled unless explicitly enabled in settings. Unsupported flows must return `needs_review`, never `submitted`. citeturn23search1turn11view0
-
-5. **Android shell milestone**  
-   Wrap the localhost UI with a Capacitor Android shell. The shell should do almost nothing beyond load the URL, show backend health, and perhaps expose a button that opens the Termux setup guide if the backend is down. Because the shell is thin, you avoid the API contract divergence already seen in `HunterXJob/mobile`. Capacitor is well suited for adding Android to an existing web project, but the build step still needs Android tooling, so treat this as packaging after the core is stable. citeturn21search2turn21search14turn12view3
-
-6. **Deferred adapters milestone**  
-   Only after all of the above should you consider dynamic, defensive, high maintenance targets such as LinkedIn style automation. The evidence from existing LinkedIn bots is that they need stealth settings, randomized click intervals, and ongoing maintenance. Those are version two or three concerns, not foundation concerns. citeturn5view3turn20view1
-
-The practical result is a much simpler and much stronger repo:
-
-- useful with zero paid services
-- useful without Playwright
-- useful without a second frontend
-- testable with local fixtures
-- aligned with Termux
-- capable of becoming an APK
-- safe by default
-- extensible by adapters instead of rewrites
-
-That is the foundation your previous attempts were missing, and it is strongly supported by what worked, and what clearly did not, across your repos and the external examples. citeturn11view0turn1view0turn24view2turn6view2turn22view4
+- [Architecture](docs/architecture.md)
+- [API contract](docs/api-contract.md)
+- [Status machine](docs/status-machine.md)
+- [Termux guide](docs/termux.md)
+- [APK shell plan](docs/apk-build.md)
