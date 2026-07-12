@@ -1,0 +1,22 @@
+[project]
+name = "jobsniffing"
+version = "0.1.0"
+description = "Android-first, local-first job discovery and review queue."
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.111",
+  "uvicorn>=0.30",
+  "jinja2>=3.1",
+  "pydantic>=2.7",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0", "httpx>=0.27"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"

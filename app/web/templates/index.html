@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JobSniffing</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main>
+    <h1>JobSniffing Review Queue</h1>
+    <p>Local-first, API-first, browser-last job tracking. Real submission remains gated and optional.</p>
+    <table>
+      <thead><tr><th>Score</th><th>Role</th><th>Company</th><th>Status</th><th>Apply</th></tr></thead>
+      <tbody>
+      {% for job in jobs %}
+        <tr>
+          <td>{{ job.score }}</td>
+          <td>{{ job.title }}</td>
+          <td>{{ job.company }}</td>
+          <td>{{ job.status }}</td>
+          <td><a href="{{ job.apply_url }}">Open</a></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5">No jobs yet. Add jobs through the API or discovery adapters.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>
