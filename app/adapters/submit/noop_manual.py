@@ -9,7 +9,4 @@ class SubmitResult:
 
 
 def prepare_manual_handoff(apply_url: str) -> SubmitResult:
-    return SubmitResult(
-        status=ApplicationStatus.NEEDS_REVIEW,
-        message=f"Manual review required. Open apply page: {apply_url}",
-    )
+    return SubmitResult(ApplicationStatus.NEEDS_REVIEW, f"Manual review required. Open apply page: {apply_url}")

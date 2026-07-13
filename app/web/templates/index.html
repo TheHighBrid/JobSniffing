@@ -1,31 +1,6 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>JobSniffing</title>
-  <link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-  <main>
-    <h1>JobSniffing Review Queue</h1>
-    <p>Local-first, API-first, browser-last job tracking. Real submission remains gated and optional.</p>
-    <table>
-      <thead><tr><th>Score</th><th>Role</th><th>Company</th><th>Status</th><th>Apply</th></tr></thead>
-      <tbody>
-      {% for job in jobs %}
-        <tr>
-          <td>{{ job.score }}</td>
-          <td>{{ job.title }}</td>
-          <td>{{ job.company }}</td>
-          <td>{{ job.status }}</td>
-          <td><a href="{{ job.apply_url }}">Open</a></td>
-        </tr>
-      {% else %}
-        <tr><td colspan="5">No jobs yet. Add jobs through the API or discovery adapters.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </main>
-</body>
-</html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0d0d0b"><title>JobSniffing</title><link rel="stylesheet" href="/static/styles.css"><script defer src="/static/app.js"></script></head><body>
+<header><div><p class="eyebrow">LOCAL JOB INTELLIGENCE</p><h1>JobSniffing</h1><p class="muted">Discover, score, review, and track. Every real application remains a human decision.</p></div><span class="muted">v{{ version }}</span></header>
+<main><section class="stats"><article><b>{{ stats.total }}</b><span>Total</span></article><article><b>{{ stats.average_score }}</b><span>Average score</span></article><article><b>{{ stats.by_status.get('shortlisted',0) }}</b><span>Shortlisted</span></article><article><b>{{ stats.by_status.get('submitted',0) }}</b><span>Submitted</span></article></section>
+<section class="panel"><details open><summary>Add a job manually</summary><form id="manual"><input name="title" placeholder="Role" required><input name="company" placeholder="Company" required><input name="location" placeholder="Ottawa, Remote Canada"><input type="url" name="apply_url" placeholder="Apply URL" required><textarea name="description" placeholder="Description"></textarea><button>Add and score</button></form></details><details><summary>Discover an ATS board</summary><form id="discover"><select name="provider"><option>greenhouse</option><option>lever</option><option>ashby</option></select><input name="identifier" placeholder="Board identifier" required><input name="company" placeholder="Display company"><input name="query" placeholder="fraud, AML, compliance"><input name="location" placeholder="Canada, Ottawa, Remote"><button>Discover and store</button></form></details><p id="message"></p></section>
+<section class="panel"><form method="get" class="filters"><input name="q" value="{{ query }}" placeholder="Search jobs"><select name="status"><option value="">All statuses</option>{% for status in statuses %}<option value="{{status.value}}" {% if selected_status==status.value %}selected{% endif %}>{{status.value.replace('_',' ')}}</option>{% endfor %}</select><input type="number" name="min_score" min="0" max="100" value="{{min_score}}"><button>Filter</button><a class="button ghost" href="/api/jobs/export.csv">Export CSV</a></form></section>
+<section class="queue">{% for job in jobs %}<article class="job" data-id="{{job.id}}"><div class="score">{{job.score}}</div><div><div class="heading"><div><p class="eyebrow">{{job.source}} · {{job.location or 'Location not listed'}}</p><h2>{{job.title}}</h2><p class="muted">{{job.company}}</p></div><span class="badge">{{job.status.replace('_',' ')}}</span></div>{% if job.description %}<p class="description">{{job.description[:360]}}{% if job.description|length>360 %}…{% endif %}</p>{% endif %}<div class="actions"><a class="button" target="_blank" rel="noopener noreferrer" href="{{job.apply_url}}">Open application</a><select class="status"><option value="">Move to…</option>{% for target in transitions[job.status] %}<option value="{{target}}">{{target.replace('_',' ')}}</option>{% endfor %}</select><button type="button" class="ghost delete">Delete</button></div></div></article>{% else %}<div class="empty"><h2>No matching jobs yet</h2><p>Add one manually or connect an ATS board.</p></div>{% endfor %}</section></main><footer><span>Local SQLite</span><a href="/docs">API docs</a><span>Manual review only</span></footer></body></html>

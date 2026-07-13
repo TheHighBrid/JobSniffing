@@ -1,13 +1,10 @@
 # Architecture
 
-JobSniffing is local-first, API-first, and browser-last. One FastAPI process serves JSON endpoints and a small server-rendered UI backed by SQLite.
+JobSniffing is one local FastAPI process with four separate layers:
 
-Core boundaries:
+1. Discovery adapters normalize public Greenhouse, Lever, and Ashby payloads.
+2. Scoring and settings provide deterministic local ranking with editable terms, exclusions, and company blocks.
+3. Tracking owns SQLite, deduplication, state transitions, statistics, and export.
+4. Web/API serves the mobile review queue and typed JSON contract from the same process.
 
-- Discovery adapters normalize jobs from public job-board surfaces.
-- Scoring is deterministic and has no paid API dependency.
-- Tracking owns the SQLite source of truth.
-- Submission adapters are optional and must fail safely into `needs_review`.
-- The Android shell is packaging only and should load the localhost UI.
-
-Version-one non-goals: Redis, Celery, Docker as the primary path, paid LLM requirements, stealth LinkedIn automation, a separate native client, and committed APK binaries.
+SQLite is the only service. Redis, Celery, Docker, paid AI, a cloud database, and browser drivers are not required. Submission remains outside the trusted core and manual by default.

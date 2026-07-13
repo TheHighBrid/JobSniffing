@@ -3,9 +3,9 @@ from app.domain.enums import ApplicationStatus
 from app.domain.state_machine import assert_transition, can_transition, is_terminal
 
 
-def test_review_gate_path_allows_safe_queue_progression():
-    assert can_transition(ApplicationStatus.DISCOVERED, ApplicationStatus.SCORED)
-    assert can_transition(ApplicationStatus.APPROVED, ApplicationStatus.QUEUED)
+def test_safe_progression_and_noop():
+    assert can_transition(ApplicationStatus.SCORED, ApplicationStatus.SHORTLISTED)
+    assert can_transition(ApplicationStatus.SCORED, ApplicationStatus.SCORED)
     assert can_transition(ApplicationStatus.FILLING, ApplicationStatus.NEEDS_REVIEW)
 
 
