@@ -5,7 +5,7 @@ import io
 import sqlite3
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -37,6 +37,17 @@ def get_conn():
         yield conn
 
 
+def parse_optional_status(value: str | None) -> ApplicationStatus | None:
+    """Treat a missing or blank query value as no status filter."""
+    if value is None or not value.strip():
+        return None
+    try:
+        return ApplicationStatus(value)
+    except ValueError as exc:
+        allowed = ", ".join(status.value for status in ApplicationStatus)
+        raise HTTPException(422, f"Invalid status '{value}'. Expected one of: {allowed}") from exc
+
+
 @app.get("/health")
 def health(conn: sqlite3.Connection = Depends(get_conn)):
     return {"status": "ok", "version": APP_VERSION, "mode": "local-first", "automation": "manual-review-only", "database": str(get_db_path()), "jobs": stats(conn)["total"], "providers": ["greenhouse", "lever", "ashby"]}
@@ -55,7 +66,8 @@ def import_jobs(payload: JobImportRequest, conn: sqlite3.Connection = Depends(ge
 
 
 @app.get("/api/jobs")
-def api_jobs(job_status: ApplicationStatus | None = Query(None, alias="status"), q: str = Query("", max_length=200), min_score: int = Query(0, ge=0, le=100), limit: int = Query(250, ge=1, le=1000), conn: sqlite3.Connection = Depends(get_conn)):
+def api_jobs(status_value: str | None = Query(None, alias="status"), q: str = Query("", max_length=200), min_score: int = Query(0, ge=0, le=100), limit: int = Query(250, ge=1, le=1000), conn: sqlite3.Connection = Depends(get_conn)):
+    job_status = parse_optional_status(status_value)
     return [dict(row) for row in list_jobs(conn, status=job_status, query=q, min_score=min_score, limit=limit)]
 
 
@@ -130,7 +142,8 @@ def api_stats(conn: sqlite3.Connection = Depends(get_conn)):
 
 
 @app.get("/", response_class=HTMLResponse)
-def index(request: Request, job_status: ApplicationStatus | None = Query(None, alias="status"), q: str = Query("", max_length=200), min_score: int | None = Query(None, ge=0, le=100), conn: sqlite3.Connection = Depends(get_conn)):
+def index(request: Request, status_value: str | None = Query(None, alias="status"), q: str = Query("", max_length=200), min_score: int | None = Query(None, ge=0, le=100), conn: sqlite3.Connection = Depends(get_conn)):
+    job_status = parse_optional_status(status_value)
     settings = load_scoring_settings(conn)
     resolved_min = settings.minimum_score if min_score is None else min_score
     transitions = {s.value: [t.value for t in sorted(targets, key=lambda item: item.value)] for s, targets in ALLOWED_TRANSITIONS.items()}
