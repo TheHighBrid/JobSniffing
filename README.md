@@ -20,20 +20,20 @@ JobSniffing is an Android-first, local-first job discovery and human review queu
 
 ## Recommended Android setup
 
-In Termux:
+Run in Termux:
 
 ```sh
 pkg update -y
 pkg install -y proot-distro
-proot-distro install ubuntu
+proot-distro install ubuntu:24.04
 proot-distro login ubuntu
 ```
 
-Inside Ubuntu:
+Run inside Ubuntu:
 
 ```sh
 apt-get update
-DEBIAN_FRONTEND=noninteractive apt-get install -y git python3 python3-venv python3-pip ca-certificates
+DEBIAN_FRONTEND=noninteractive apt-get install -y git ca-certificates
 cd /root
 git clone https://github.com/TheHighBrid/JobSniffing.git
 cd JobSniffing
@@ -43,11 +43,33 @@ cd JobSniffing
 
 Open `http://127.0.0.1:8010` in the Android browser. Keep the Termux session open.
 
+The bootstrap installs missing Python packages, creates `.venv`, installs JobSniffing, runs all tests, starts a temporary server, and verifies a real health request.
+
+## Native Termux alternative
+
+```sh
+pkg update -y
+pkg install -y git
+git clone https://github.com/TheHighBrid/JobSniffing.git
+cd JobSniffing
+./scripts/termux-bootstrap.sh
+./scripts/termux-run.sh
+```
+
 ## Daily start
+
+Ubuntu route:
 
 ```sh
 proot-distro login ubuntu
 cd /root/JobSniffing
+./scripts/termux-run.sh
+```
+
+Native Termux route:
+
+```sh
+cd ~/JobSniffing
 ./scripts/termux-run.sh
 ```
 
@@ -85,16 +107,16 @@ curl -X PUT http://127.0.0.1:8010/api/settings/scoring \
   -d '{"preferred_terms":{"fraud":20,"aml":18,"kyc":16,"bilingual":14,"compliance":14,"investigation":12,"ottawa":8,"remote":6},"excluded_terms":["commission only","door to door"],"blacklisted_companies":[],"minimum_score":15}'
 ```
 
-Title matches receive double weight. Each excluded term subtracts 35 points. Scores are clamped from 0 to 100.
+Title matches receive double weight. Each excluded term subtracts 35 points. Scores are clamped from 0 to 100. Blacklisted companies are moved to `blocked` unless a job is already terminal.
 
 ## Verify after updates
 
 ```sh
 cd /root/JobSniffing
-. .venv/bin/activate
-python -m pip install -e '.[test]'
 ./scripts/verify.sh
 ```
+
+For native Termux, use `cd ~/JobSniffing` first.
 
 ## Backup and export
 
@@ -122,7 +144,8 @@ curl -o jobsniffing-export.csv http://127.0.0.1:8010/api/jobs/export.csv
 
 JobSniffing discovers, scores, prepares, and tracks. It does not attempt universal auto-submission. A future submission adapter must be site-specific, dry-run-first, and must observe a confirmation signal before the state can become `submitted`.
 
-- [Detailed Termux guide](docs/termux.md)
+- [Detailed Android, Termux, and Ubuntu guide](docs/termux.md)
+- [Audit and readiness report](docs/audit.md)
 - [Architecture](docs/architecture.md)
 - [API contract](docs/api-contract.md)
 - [Status machine](docs/status-machine.md)
