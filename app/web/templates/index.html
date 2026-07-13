@@ -5,27 +5,100 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>JobSniffing</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
 </head>
 <body>
   <main>
-    <h1>JobSniffing Review Queue</h1>
-    <p>Local-first, API-first, browser-last job tracking. Real submission remains gated and optional.</p>
-    <table>
-      <thead><tr><th>Score</th><th>Role</th><th>Company</th><th>Status</th><th>Apply</th></tr></thead>
-      <tbody>
-      {% for job in jobs %}
-        <tr>
-          <td>{{ job.score }}</td>
-          <td>{{ job.title }}</td>
-          <td>{{ job.company }}</td>
-          <td>{{ job.status }}</td>
-          <td><a href="{{ job.apply_url }}">Open</a></td>
-        </tr>
-      {% else %}
-        <tr><td colspan="5">No jobs yet. Add jobs through the API or discovery adapters.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">LOCAL-FIRST JOB WORKBENCH</p>
+        <h1>JobSniffing</h1>
+        <p>Discover public ATS listings, score them locally, and move each job through a review-gated pipeline.</p>
+      </div>
+      <nav>
+        <a href="/docs">API docs</a>
+        <a href="/health">Health</a>
+      </nav>
+    </header>
+
+    <div id="message" role="status" aria-live="polite"></div>
+
+    <section class="panel">
+      <h2>Scan a public job board</h2>
+      <form id="scan-form" class="grid-form">
+        <label>Source
+          <select name="source" required>
+            <option value="greenhouse">Greenhouse</option>
+            <option value="lever">Lever</option>
+            <option value="ashby">Ashby</option>
+          </select>
+        </label>
+        <label>Board token
+          <input name="board" required pattern="[A-Za-z0-9._-]+" placeholder="company-token">
+        </label>
+        <label>Company label
+          <input name="company" placeholder="Optional display name">
+        </label>
+        <button type="submit">Scan board</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <details>
+        <summary>Add a job manually</summary>
+        <form id="job-form" class="grid-form roomy">
+          <label>Source<input name="source" value="manual" required></label>
+          <label>External ID<input name="external_id" required></label>
+          <label>Title<input name="title" required></label>
+          <label>Company<input name="company" required></label>
+          <label>Location<input name="location"></label>
+          <label>Apply URL<input name="apply_url" type="url" required></label>
+          <label class="wide">Description<textarea name="description" rows="4"></textarea></label>
+          <button type="submit">Save job</button>
+        </form>
+      </details>
+    </section>
+
+    <section class="panel queue">
+      <div class="section-heading">
+        <h2>Review queue</h2>
+        <span>{{ jobs|length }} tracked</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Score</th><th>Role</th><th>Company</th><th>Status</th><th>Next step</th><th>Apply</th></tr>
+          </thead>
+          <tbody>
+          {% for job in jobs %}
+            <tr>
+              <td><strong>{{ job.score }}</strong></td>
+              <td>{{ job.title }}<small>{{ job.location }}</small></td>
+              <td>{{ job.company }}<small>{{ job.source }}</small></td>
+              <td><span class="status">{{ job.status }}</span></td>
+              <td>
+                {% set transitions = allowed_transitions[job.status] %}
+                {% if transitions %}
+                <form class="status-form" data-job-id="{{ job.id }}">
+                  <select name="status" aria-label="New status for {{ job.title }}">
+                    {% for target in transitions %}<option value="{{ target.value }}">{{ target.value }}</option>{% endfor %}
+                  </select>
+                  <input name="notes" placeholder="Optional note">
+                  <button type="submit">Update</button>
+                </form>
+                {% else %}
+                <span class="muted">Terminal</span>
+                {% endif %}
+              </td>
+              <td><a class="apply" href="{{ job.apply_url }}" target="_blank" rel="noopener noreferrer">Open</a></td>
+            </tr>
+          {% else %}
+            <tr><td colspan="6" class="empty">No jobs yet. Scan a board or add one manually.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
   </main>
 </body>
 </html>

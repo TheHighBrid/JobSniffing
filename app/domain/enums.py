@@ -15,8 +15,6 @@ class ApplicationStatus(StrEnum):
 
 
 TERMINAL_STATUSES = {
-    ApplicationStatus.NEEDS_REVIEW,
     ApplicationStatus.SUBMITTED,
     ApplicationStatus.BLOCKED,
-    ApplicationStatus.FAILED,
 }

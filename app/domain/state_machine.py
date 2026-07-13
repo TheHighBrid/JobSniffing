@@ -1,16 +1,46 @@
 from app.domain.enums import ApplicationStatus, TERMINAL_STATUSES
 
 ALLOWED_TRANSITIONS: dict[ApplicationStatus, set[ApplicationStatus]] = {
-    ApplicationStatus.DISCOVERED: {ApplicationStatus.SCORED, ApplicationStatus.BLOCKED},
-    ApplicationStatus.SCORED: {ApplicationStatus.SHORTLISTED, ApplicationStatus.BLOCKED},
-    ApplicationStatus.SHORTLISTED: {ApplicationStatus.APPROVED, ApplicationStatus.NEEDS_REVIEW, ApplicationStatus.BLOCKED},
-    ApplicationStatus.APPROVED: {ApplicationStatus.QUEUED, ApplicationStatus.BLOCKED},
-    ApplicationStatus.QUEUED: {ApplicationStatus.FILLING, ApplicationStatus.NEEDS_REVIEW, ApplicationStatus.BLOCKED},
-    ApplicationStatus.FILLING: {ApplicationStatus.NEEDS_REVIEW, ApplicationStatus.SUBMITTED, ApplicationStatus.BLOCKED, ApplicationStatus.FAILED},
-    ApplicationStatus.NEEDS_REVIEW: {ApplicationStatus.APPROVED, ApplicationStatus.QUEUED, ApplicationStatus.BLOCKED, ApplicationStatus.FAILED},
+    ApplicationStatus.DISCOVERED: {
+        ApplicationStatus.SCORED,
+        ApplicationStatus.BLOCKED,
+    },
+    ApplicationStatus.SCORED: {
+        ApplicationStatus.SHORTLISTED,
+        ApplicationStatus.BLOCKED,
+    },
+    ApplicationStatus.SHORTLISTED: {
+        ApplicationStatus.APPROVED,
+        ApplicationStatus.NEEDS_REVIEW,
+        ApplicationStatus.BLOCKED,
+    },
+    ApplicationStatus.APPROVED: {
+        ApplicationStatus.QUEUED,
+        ApplicationStatus.BLOCKED,
+    },
+    ApplicationStatus.QUEUED: {
+        ApplicationStatus.FILLING,
+        ApplicationStatus.NEEDS_REVIEW,
+        ApplicationStatus.BLOCKED,
+    },
+    ApplicationStatus.FILLING: {
+        ApplicationStatus.NEEDS_REVIEW,
+        ApplicationStatus.SUBMITTED,
+        ApplicationStatus.BLOCKED,
+        ApplicationStatus.FAILED,
+    },
+    ApplicationStatus.NEEDS_REVIEW: {
+        ApplicationStatus.APPROVED,
+        ApplicationStatus.QUEUED,
+        ApplicationStatus.BLOCKED,
+        ApplicationStatus.FAILED,
+    },
     ApplicationStatus.SUBMITTED: set(),
     ApplicationStatus.BLOCKED: set(),
-    ApplicationStatus.FAILED: {ApplicationStatus.NEEDS_REVIEW},
+    ApplicationStatus.FAILED: {
+        ApplicationStatus.NEEDS_REVIEW,
+        ApplicationStatus.QUEUED,
+    },
 }
 
 

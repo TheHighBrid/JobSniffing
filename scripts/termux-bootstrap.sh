@@ -1,8 +1,13 @@
-#!/usr/bin/env sh
+#!/data/data/com.termux/files/usr/bin/sh
 set -eu
-pkg update
-pkg install -y python git
-python -m venv .venv
-. .venv/bin/activate
-pip install -e '.[test]'
-echo "Run ./scripts/termux-run.sh and open http://127.0.0.1:8010"
+
+ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$ROOT"
+
+pkg install -y python curl
+python -m venv .venv-termux
+. .venv-termux/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e '.[test]'
+
+echo "Installed. Run: ./scripts/termux-run.sh"

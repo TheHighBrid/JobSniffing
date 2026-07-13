@@ -1,1 +1,0 @@
-{"name":"jobsniffing-automation-bridge","private":true,"type":"module","scripts":{"test":"node src/runner.ts --dry-run"},"dependencies":{},"devDependencies":{}}

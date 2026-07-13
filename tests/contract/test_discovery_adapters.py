@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+
 from app.adapters.discovery.ashby import normalize_ashby
 from app.adapters.discovery.greenhouse import normalize_greenhouse
 from app.adapters.discovery.lever import normalize_lever
@@ -12,7 +13,7 @@ def test_greenhouse_fixture_normalizes_to_contract():
     [job] = normalize_greenhouse(payload, "example")
     assert job.source == "greenhouse"
     assert job.external_id == "101"
-    assert job.apply_url
+    assert str(job.apply_url).startswith("https://")
 
 
 def test_lever_fixture_normalizes_to_contract():

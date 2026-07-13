@@ -2,9 +2,8 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
-data/
-*.sqlite3
-node_modules/
-dist/
-build/
+.venv-termux/
+.venv-ubuntu/
+data/*.sqlite3*
+*.log
 .env
