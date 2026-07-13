@@ -24,7 +24,7 @@ In Termux:
 
 ```sh
 pkg update -y
-pkg install -y proot-distro git
+pkg install -y proot-distro
 proot-distro install ubuntu
 proot-distro login ubuntu
 ```
@@ -32,6 +32,8 @@ proot-distro login ubuntu
 Inside Ubuntu:
 
 ```sh
+apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get install -y git python3 python3-venv python3-pip ca-certificates
 cd /root
 git clone https://github.com/TheHighBrid/JobSniffing.git
 cd JobSniffing
