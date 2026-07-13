@@ -14,9 +14,4 @@ class ApplicationStatus(StrEnum):
     FAILED = "failed"
 
 
-TERMINAL_STATUSES = {
-    ApplicationStatus.NEEDS_REVIEW,
-    ApplicationStatus.SUBMITTED,
-    ApplicationStatus.BLOCKED,
-    ApplicationStatus.FAILED,
-}
+TERMINAL_STATUSES = {ApplicationStatus.SUBMITTED, ApplicationStatus.BLOCKED}

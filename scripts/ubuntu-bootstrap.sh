@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 set -eu
-if ! command -v pkg >/dev/null 2>&1; then echo "Use ./scripts/ubuntu-bootstrap.sh inside Ubuntu/proot." >&2; exit 1; fi
+if ! command -v apt-get >/dev/null 2>&1; then echo "This script requires Ubuntu/Debian." >&2; exit 1; fi
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-pkg update -y
-pkg install -y python git rust clang make pkg-config
+apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get install -y python3 python3-venv python3-pip git curl ca-certificates
 cd "$ROOT"
-python -m venv .venv
+python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install -e '.[test]'

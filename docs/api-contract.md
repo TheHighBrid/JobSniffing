@@ -1,8 +1,18 @@
 # API Contract
 
-- `GET /health` returns local backend status.
-- `POST /api/jobs` upserts a normalized job posting and scores it locally.
-- `GET /api/jobs` lists tracked jobs in score order.
-- `POST /api/jobs/{job_id}/status` changes status only when the state machine allows it.
+Interactive documentation is available at `/docs`.
 
-The web UI must call these contracts rather than embedding ATS-specific logic.
+- `GET /health`
+- `POST /api/jobs`
+- `POST /api/jobs/import`
+- `GET /api/jobs?status=&q=&min_score=&limit=`
+- `GET /api/jobs/{id}`
+- `DELETE /api/jobs/{id}`
+- `POST /api/jobs/{id}/status`
+- `POST /api/discovery`
+- `GET|PUT /api/settings/scoring`
+- `POST /api/jobs/rescore`
+- `GET /api/jobs/export.csv`
+- `GET /api/stats`
+
+Discovery accepts an ATS board identifier, not an arbitrary URL.

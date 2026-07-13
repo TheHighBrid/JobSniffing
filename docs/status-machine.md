@@ -1,12 +1,7 @@
 # Status Machine
 
-Applications move through a strict review-gated state machine:
+`discovered -> scored -> shortlisted -> approved -> queued -> filling`
 
-`discovered -> scored -> shortlisted -> approved -> queued -> filling -> needs_review | submitted | blocked | failed`
+From `filling`, a job can become `needs_review`, `submitted`, `blocked`, or `failed`. `needs_review` can return to `approved` or `queued`. `failed` can return to `needs_review`. `submitted` and `blocked` are terminal. Repeating the current status is a safe no-op.
 
-Rules:
-
-- `submitted` is terminal and must only be set after an observed confirmation signal.
-- Unsupported or uncertain automation returns `needs_review`, never fake success.
-- `blocked` is terminal for policy, blacklist, daily cap, or site restriction failures.
-- `failed` can move back to `needs_review` so the user can decide whether to retry manually.
+Invalid transitions return HTTP 409. Unknown jobs return HTTP 404.

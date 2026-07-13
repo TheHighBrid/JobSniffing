@@ -1,10 +1,11 @@
-import os
+from __future__ import annotations
+
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
 
-DB_PATH = Path(os.getenv("JOBSNIFFING_DB", "data/jobsniffing.sqlite3"))
+from app.config import get_db_path
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS job_postings (
@@ -23,6 +24,8 @@ CREATE TABLE IF NOT EXISTS job_postings (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(source, external_id)
 );
+CREATE INDEX IF NOT EXISTS idx_job_score ON job_postings(score DESC);
+CREATE INDEX IF NOT EXISTS idx_job_status ON job_postings(status);
 CREATE TABLE IF NOT EXISTS answer_bank (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   question TEXT NOT NULL UNIQUE,
@@ -35,20 +38,29 @@ CREATE TABLE IF NOT EXISTS run_logs (
   message TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS settings_kv (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 
 def connect(path: Path | None = None) -> sqlite3.Connection:
-    db_path = path or DB_PATH
+    db_path = path or get_db_path()
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(db_path, timeout=30)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys=ON")
+    conn.execute("PRAGMA busy_timeout=30000")
     return conn
 
 
-def init_db(path: Path | None = None) -> None:
-    with connect(path) as conn:
+def init_db(path: Path | None = None) -> Path:
+    db_path = path or get_db_path()
+    with connect(db_path) as conn:
         conn.executescript(SCHEMA)
+    return db_path
 
 
 @contextmanager
@@ -57,5 +69,8 @@ def session(path: Path | None = None) -> Iterator[sqlite3.Connection]:
     try:
         yield conn
         conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
