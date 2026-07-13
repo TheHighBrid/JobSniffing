@@ -25,6 +25,19 @@ def test_validation_transition_and_unknown_errors(tmp_path, monkeypatch):
         assert client.post("/api/jobs/999/status", json={"status":"shortlisted"}).status_code == 404
 
 
+def test_blank_status_filter_means_all_statuses(tmp_path, monkeypatch):
+    monkeypatch.setenv("JOBSNIFFING_DB", str(tmp_path / "test.sqlite3"))
+    with TestClient(app) as client:
+        assert client.post("/api/jobs", json=payload()).status_code == 201
+        page = client.get("/?q=&status=&min_score=0")
+        assert page.status_code == 200
+        assert "Bilingual Fraud Investigator" in page.text
+        jobs = client.get("/api/jobs?status=")
+        assert jobs.status_code == 200
+        assert len(jobs.json()) == 1
+        assert client.get("/?status=not-a-status").status_code == 422
+
+
 def test_settings_export_static_delete_and_health(tmp_path, monkeypatch):
     database = tmp_path / "test.sqlite3"; monkeypatch.setenv("JOBSNIFFING_DB", str(database)); monkeypatch.chdir(tmp_path)
     with TestClient(app) as client:
