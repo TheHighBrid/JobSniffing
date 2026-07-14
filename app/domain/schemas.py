@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.domain.enums import ApplicationStatus
+from app.domain.enums import ApplicationStatus, AutomationMode
 
 
 class JobPostingIn(BaseModel):
@@ -74,3 +74,10 @@ class ScoringSettings(BaseModel):
 
 class JobImportRequest(BaseModel):
     jobs: list[JobPostingIn] = Field(min_length=1, max_length=1000)
+
+
+class AutomationSettings(BaseModel):
+    mode: AutomationMode = AutomationMode.MANUAL
+    daily_cap: int = Field(default=0, ge=0, le=100)
+    min_delay_seconds: int = Field(default=0, ge=0, le=86400)
+

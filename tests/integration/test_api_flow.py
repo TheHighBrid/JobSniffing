@@ -50,3 +50,14 @@ def test_settings_export_static_delete_and_health(tmp_path, monkeypatch):
         health = client.get("/health").json(); assert health["jobs"] == 1 and health["database"] == str(database)
         assert client.delete(f"/api/jobs/{job_id}").status_code == 204
         assert client.get(f"/api/jobs/{job_id}").status_code == 404
+
+
+def test_automation_settings_round_trip(tmp_path, monkeypatch):
+    monkeypatch.setenv("JOBSNIFFING_DB", str(tmp_path / "test.sqlite3"))
+    with TestClient(app) as client:
+        assert client.get("/api/settings/automation").json()["mode"] == "manual"
+        response = client.put("/api/settings/automation", json={"mode":"assisted","daily_cap":3,"min_delay_seconds":15})
+        assert response.status_code == 200
+        assert response.json() == {"mode":"assisted","daily_cap":3,"min_delay_seconds":15}
+        health = client.get("/health").json()
+        assert health["automation"] == "assisted" and health["automation_daily_cap"] == 3

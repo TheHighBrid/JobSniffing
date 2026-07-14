@@ -11,8 +11,8 @@ JobSniffing is an Android-first, local-first job discovery and human review queu
 - Offline scoring with editable weighted terms.
 - Defaults tuned for bilingual banking, fraud, AML/KYC, compliance, risk, government, Ottawa/Gatineau, and remote-Canada searches.
 - Negative-term penalties and company blocking.
-- Strict status transitions with proper 404, 409, and 422 responses.
-- Mobile dashboard for filters, review, status changes, deletion, and opening applications.
+- Strict status transitions with preparation, confirmation, verification-failure, manual-intervention, withdrawal, and proper 404, 409, and 422 responses.
+- Mobile dashboard for filters, review, status changes, deletion, opening applications, and the visible manual/assisted/auto mode switch.
 - SQLite deduplication, rescoring, CSV export, diagnostics, and OpenAPI docs.
 - Ubuntu/proot and native Termux bootstrap scripts.
 - No Redis, Celery, Docker, paid AI key, cloud database, or browser driver.
@@ -142,7 +142,7 @@ curl -o jobsniffing-export.csv http://127.0.0.1:8010/api/jobs/export.csv
 
 ## Safety boundary
 
-JobSniffing discovers, scores, prepares, and tracks. It does not attempt universal auto-submission. A future submission adapter must be site-specific, dry-run-first, and must observe a confirmation signal before the state can become `submitted`.
+JobSniffing discovers, scores, prepares, and tracks. The default mode is `manual`, `assisted` requires human confirmation, and `auto` is reserved for capped, adapter-gated submission paths. It does not attempt universal auto-submission. A future submission adapter must be site-specific, dry-run-first, obey local safety guardrails, and should move through `awaiting_confirmation` before the state becomes `submitted`.
 
 - [Detailed Android, Termux, and Ubuntu guide](docs/termux.md)
 - [Audit and readiness report](docs/audit.md)
