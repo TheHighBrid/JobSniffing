@@ -3,7 +3,8 @@ from __future__ import annotations
 import json
 import sqlite3
 
-from app.domain.schemas import ScoringSettings
+from app.domain.enums import AutomationMode
+from app.domain.schemas import AutomationSettings, ScoringSettings
 from app.services.scoring_service import DEFAULT_EXCLUDED_TERMS, DEFAULT_PREFERRED_TERMS
 
 DEFAULT_SETTINGS = ScoringSettings(preferred_terms=DEFAULT_PREFERRED_TERMS, excluded_terms=DEFAULT_EXCLUDED_TERMS, blacklisted_companies=[], minimum_score=0)
@@ -39,3 +40,20 @@ def save_scoring_settings(conn: sqlite3.Connection, settings: ScoringSettings) -
 def is_blacklisted(company: str, settings: ScoringSettings) -> bool:
     normalized = company.strip().lower()
     return any(entry == normalized or entry in normalized for entry in settings.blacklisted_companies)
+
+
+def load_automation_settings(conn: sqlite3.Connection) -> AutomationSettings:
+    mode = _read(conn, "automation_mode")
+    daily_cap = _read(conn, "automation_daily_cap")
+    delay = _read(conn, "automation_min_delay_seconds")
+    return AutomationSettings(
+        mode=AutomationMode(json.loads(mode)) if mode else AutomationMode.MANUAL,
+        daily_cap=json.loads(daily_cap) if daily_cap else 0,
+        min_delay_seconds=json.loads(delay) if delay else 0,
+    )
+
+
+def save_automation_settings(conn: sqlite3.Connection, settings: AutomationSettings) -> None:
+    _write(conn, "automation_mode", settings.mode.value)
+    _write(conn, "automation_daily_cap", settings.daily_cap)
+    _write(conn, "automation_min_delay_seconds", settings.min_delay_seconds)

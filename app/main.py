@@ -13,10 +13,10 @@ from fastapi.templating import Jinja2Templates
 from app.config import APP_VERSION, PROJECT_ROOT, get_db_path
 from app.db.sqlite import init_db, session
 from app.domain.enums import ApplicationStatus
-from app.domain.schemas import DiscoveryRequest, JobImportRequest, JobPostingIn, ScoringSettings, StatusChange
+from app.domain.schemas import AutomationSettings, DiscoveryRequest, JobImportRequest, JobPostingIn, ScoringSettings, StatusChange
 from app.domain.state_machine import ALLOWED_TRANSITIONS
 from app.services.discovery_service import DiscoveryError, discover
-from app.services.settings_service import load_scoring_settings, save_scoring_settings
+from app.services.settings_service import load_automation_settings, load_scoring_settings, save_automation_settings, save_scoring_settings
 from app.services.tracking_service import bulk_upsert, change_status, delete_job, get_job, list_jobs, log_run, rescore_all, stats, upsert_job
 
 
@@ -50,7 +50,8 @@ def parse_optional_status(value: str | None) -> ApplicationStatus | None:
 
 @app.get("/health")
 def health(conn: sqlite3.Connection = Depends(get_conn)):
-    return {"status": "ok", "version": APP_VERSION, "mode": "local-first", "automation": "manual-review-only", "database": str(get_db_path()), "jobs": stats(conn)["total"], "providers": ["greenhouse", "lever", "ashby"]}
+    automation = load_automation_settings(conn)
+    return {"status": "ok", "version": APP_VERSION, "mode": "local-first", "automation": automation.mode.value, "automation_daily_cap": automation.daily_cap, "database": str(get_db_path()), "jobs": stats(conn)["total"], "providers": ["greenhouse", "lever", "ashby"]}
 
 
 @app.post("/api/jobs", status_code=201)
@@ -131,6 +132,18 @@ def put_settings(settings: ScoringSettings, conn: sqlite3.Connection = Depends(g
     return settings
 
 
+@app.get("/api/settings/automation", response_model=AutomationSettings)
+def get_automation_settings(conn: sqlite3.Connection = Depends(get_conn)):
+    return load_automation_settings(conn)
+
+
+@app.put("/api/settings/automation", response_model=AutomationSettings)
+def put_automation_settings(settings: AutomationSettings, conn: sqlite3.Connection = Depends(get_conn)):
+    save_automation_settings(conn, settings)
+    log_run(conn, "automation-settings", f"Mode set to {settings.mode.value}; cap={settings.daily_cap}; delay={settings.min_delay_seconds}s")
+    return settings
+
+
 @app.post("/api/jobs/rescore")
 def rescore(conn: sqlite3.Connection = Depends(get_conn)):
     return {"rescored": rescore_all(conn)}
@@ -147,4 +160,4 @@ def index(request: Request, status_value: str | None = Query(None, alias="status
     settings = load_scoring_settings(conn)
     resolved_min = settings.minimum_score if min_score is None else min_score
     transitions = {s.value: [t.value for t in sorted(targets, key=lambda item: item.value)] for s, targets in ALLOWED_TRANSITIONS.items()}
-    return templates.TemplateResponse(request=request, name="index.html", context={"jobs": list_jobs(conn, status=job_status, query=q, min_score=resolved_min, limit=500), "stats": stats(conn), "statuses": list(ApplicationStatus), "selected_status": job_status.value if job_status else "", "query": q, "min_score": resolved_min, "transitions": transitions, "version": APP_VERSION})
+    return templates.TemplateResponse(request=request, name="index.html", context={"jobs": list_jobs(conn, status=job_status, query=q, min_score=resolved_min, limit=500), "stats": stats(conn), "statuses": list(ApplicationStatus), "selected_status": job_status.value if job_status else "", "query": q, "min_score": resolved_min, "transitions": transitions, "automation": load_automation_settings(conn), "version": APP_VERSION})
