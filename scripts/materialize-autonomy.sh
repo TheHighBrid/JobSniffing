@@ -24,6 +24,11 @@ if [[ ! -f overlays/wizard-v1/apply.sh || ! -f overlays/wizard-v1/finalize.sh ]]
   exit 1
 fi
 
+if [[ ! -f overlays/taleo-v1/apply.sh || ! -f overlays/taleo-v1/finalize.sh ]]; then
+  echo "Missing transparent taleo-v1 overlay" >&2
+  exit 1
+fi
+
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
@@ -35,6 +40,8 @@ bash overlays/credentials-v1/apply.sh
 bash overlays/credentials-v1/finalize.sh
 bash overlays/wizard-v1/apply.sh
 bash overlays/wizard-v1/finalize.sh
+bash overlays/taleo-v1/apply.sh
+bash overlays/taleo-v1/finalize.sh
 
 find . -type d -name __pycache__ -prune -exec rm -rf {} +
 rm -rf .pytest_cache jobsniffing.egg-info data
@@ -48,9 +55,9 @@ rm -f .autonomy-current.part-*
 rm -f .autonomy-phase1.tar.gz.b64
 rm -f jobsniffing-consolidation-v1.zip jobsniffing-consolidation-v1.bundle
 rm -f .github/workflows/autonomy-bootstrap.yml
-rm -rf overlays/credentials-v1 overlays/wizard-v1
+rm -rf overlays/credentials-v1 overlays/wizard-v1 overlays/taleo-v1
 
 echo
-echo "Autonomy source tree with credentials and shared wizard materialized and verified."
+echo "Autonomy source tree with credentials, shared wizard, and Taleo v1 materialized and verified."
 echo "Review with: git status && git diff --stat"
 echo "Then commit and push only after review."
