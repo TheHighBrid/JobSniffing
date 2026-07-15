@@ -10,6 +10,7 @@ for path in \
   scripts/init-credentials.sh \
   tests/unit/test_taleo_adapter.py \
   docs/credentials.md \
+  docs/AUTONOMY_PROGRESS.md \
   docs/SPRINT_HANDOFF.md \
   README.md
 do
