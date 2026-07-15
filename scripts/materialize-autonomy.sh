@@ -14,20 +14,12 @@ if [[ ! -f .autonomy-current.part-00 || ! -f .autonomy-current.part-02h ]]; then
   exit 1
 fi
 
-if [[ ! -f overlays/credentials-v1/apply.sh || ! -f overlays/credentials-v1/finalize.sh ]]; then
-  echo "Missing transparent credentials-v1 overlay" >&2
-  exit 1
-fi
-
-if [[ ! -f overlays/wizard-v1/apply.sh || ! -f overlays/wizard-v1/finalize.sh ]]; then
-  echo "Missing transparent wizard-v1 overlay" >&2
-  exit 1
-fi
-
-if [[ ! -f overlays/taleo-v1/apply.sh || ! -f overlays/taleo-v1/finalize.sh ]]; then
-  echo "Missing transparent taleo-v1 overlay" >&2
-  exit 1
-fi
+for layer in credentials-v1 wizard-v1 taleo-v1 workday-v1; do
+  if [[ ! -f "overlays/$layer/apply.sh" || ! -f "overlays/$layer/finalize.sh" ]]; then
+    echo "Missing transparent $layer overlay" >&2
+    exit 1
+  fi
+done
 
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
@@ -36,12 +28,10 @@ unzip -q jobsniffing-consolidation-v1.zip -d "$TMP_DIR"
 cp -a "$TMP_DIR/JobSniffing/." ./
 
 cat .autonomy-current.part-* | base64 --decode | tar -xzf -
-bash overlays/credentials-v1/apply.sh
-bash overlays/credentials-v1/finalize.sh
-bash overlays/wizard-v1/apply.sh
-bash overlays/wizard-v1/finalize.sh
-bash overlays/taleo-v1/apply.sh
-bash overlays/taleo-v1/finalize.sh
+for layer in credentials-v1 wizard-v1 taleo-v1 workday-v1; do
+  bash "overlays/$layer/apply.sh"
+  bash "overlays/$layer/finalize.sh"
+done
 
 find . -type d -name __pycache__ -prune -exec rm -rf {} +
 rm -rf .pytest_cache jobsniffing.egg-info data
@@ -55,9 +45,9 @@ rm -f .autonomy-current.part-*
 rm -f .autonomy-phase1.tar.gz.b64
 rm -f jobsniffing-consolidation-v1.zip jobsniffing-consolidation-v1.bundle
 rm -f .github/workflows/autonomy-bootstrap.yml
-rm -rf overlays/credentials-v1 overlays/wizard-v1 overlays/taleo-v1
+rm -rf overlays/credentials-v1 overlays/wizard-v1 overlays/taleo-v1 overlays/workday-v1
 
 echo
-echo "Autonomy source tree with credentials, shared wizard, and Taleo v1 materialized and verified."
+echo "Autonomy source tree through Workday v1 materialized and verified."
 echo "Review with: git status && git diff --stat"
 echo "Then commit and push only after review."
