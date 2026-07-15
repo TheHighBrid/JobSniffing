@@ -1,6 +1,7 @@
-name: Bootstrap autonomy branch
+name: Materialize verified autonomy branch
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - autonomy/shared-primitives-v1
@@ -13,8 +14,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  bootstrap:
-    if: ${{ !contains(github.event.head_commit.message, '[autonomy-bootstrap-complete]') }}
+  materialize:
+    if: ${{ github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[autonomy-materialized]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,12 +33,17 @@ jobs:
         run: |
           set -euo pipefail
           test -f jobsniffing-consolidation-v1.zip
-          test -f .autonomy-phase1.tar.gz.b64
+          test -f .autonomy-current.part-00
+          test -f .autonomy-current.part-02h
+
           rm -rf /tmp/jobsniffing-bootstrap
           mkdir -p /tmp/jobsniffing-bootstrap
           unzip -q jobsniffing-consolidation-v1.zip -d /tmp/jobsniffing-bootstrap
           cp -a /tmp/jobsniffing-bootstrap/JobSniffing/. ./
-          base64 --decode .autonomy-phase1.tar.gz.b64 | tar -xzf -
+
+          cat .autonomy-current.part-* | base64 --decode | tar -xzf -
+
+          rm -f .autonomy-current.part-*
           rm -f .autonomy-phase1.tar.gz.b64
           rm -f jobsniffing-consolidation-v1.zip jobsniffing-consolidation-v1.bundle
           rm -f .github/workflows/autonomy-bootstrap.yml
@@ -58,5 +64,5 @@ jobs:
           git config user.name 'JobSniffing Autonomy Bot'
           git config user.email 'actions@users.noreply.github.com'
           git add -A
-          git commit -m 'feat: add shared ATS autonomy primitives [autonomy-bootstrap-complete]'
+          git commit -m 'feat: materialize shared ATS autonomy engine [autonomy-materialized]'
           git push origin HEAD:autonomy/shared-primitives-v1
