@@ -14,7 +14,7 @@ if [[ ! -f .autonomy-current.part-00 || ! -f .autonomy-current.part-02h ]]; then
   exit 1
 fi
 
-if [[ ! -f overlays/credentials-v1/apply.sh ]]; then
+if [[ ! -f overlays/credentials-v1/apply.sh || ! -f overlays/credentials-v1/finalize.sh ]]; then
   echo "Missing transparent credentials-v1 overlay" >&2
   exit 1
 fi
@@ -27,6 +27,7 @@ cp -a "$TMP_DIR/JobSniffing/." ./
 
 cat .autonomy-current.part-* | base64 --decode | tar -xzf -
 bash overlays/credentials-v1/apply.sh
+bash overlays/credentials-v1/finalize.sh
 
 find . -type d -name __pycache__ -prune -exec rm -rf {} +
 rm -rf .pytest_cache jobsniffing.egg-info data
