@@ -25,208 +25,208 @@ diff -ruN '--exclude=.git' '--exclude=*.pyc' workday_baseline/JobSniffing-autono
 +          cache: pip
 +      - name: Materialize and verify the stacked source tree
 +        run: bash scripts/materialize-autonomy.sh
-+diff -ruN '--exclude=.git' '--exclude=*.pyc' workday_baseline/JobSniffing-autonomy-taleo-v1-src/CHECKPOINT.md jobsniffing_resume/JobSniffing-autonomy-taleo-v1-src/CHECKPOINT.md
-+--- workday_baseline/JobSniffing-autonomy-taleo-v1-src/CHECKPOINT.md	2026-07-15 18:50:32.000000000 +0000
-++++ jobsniffing_resume/JobSniffing-autonomy-taleo-v1-src/CHECKPOINT.md	2026-07-15 21:51:28.869796271 +0000
-+@@ -1,10 +1,10 @@
-+-# Saved continuation checkpoint
-++# JobSniffing checkpoint
-+ 
-+-Repository: `TheHighBrid/JobSniffing`
-+-Branch: `autonomy/taleo-v1`
-+-Draft PR: `#11`
-+-Checkpoint date: `2026-07-15`
-+-Verified baseline: `120 tests passing`
-+-Next task: `Workday adapter v1`
-++Current completed layer: **Workday adapter v1**.
-++
-++- Branch: `autonomy/workday-v1`
-++- Base: `autonomy/taleo-v1`
-++- Verified: **134 tests**, FastAPI, HTTP, SQLite, and default-mode smoke checks
-++- Next: **iCIMS iframe and SPA adapter v1**
-+ 
-+ Read `docs/AUTONOMY_PROGRESS.md` and `docs/SPRINT_HANDOFF.md` before continuing.
-+diff -ruN '--exclude=.git' '--exclude=*.pyc' workday_baseline/JobSniffing-autonomy-taleo-v1-src/README.md jobsniffing_resume/JobSniffing-autonomy-taleo-v1-src/README.md
-+--- workday_baseline/JobSniffing-autonomy-taleo-v1-src/README.md	2026-07-15 18:43:08.000000000 +0000
-++++ jobsniffing_resume/JobSniffing-autonomy-taleo-v1-src/README.md	2026-07-15 21:51:28.868724898 +0000
-+@@ -25,7 +25,7 @@
-+ - Verified candidate profile (per-field source, verification, contexts, permissions; sensitive keys locked to manual approval).
-+ - Question engine: safe_auto / adapter_rule / requires_review classification; answers only from the verified profile or the approved QA bank; unknown is never guessed.
-+ - Document pipeline: id-tracked master resume facts, reorder-only tailoring, factuality report (source facts, excluded keywords, exaggeration flags), grounded cover letter, ATS-safe ReportLab PDFs.
-+-- Submission: Tier-0 email plus Greenhouse, Lever, Ashby, and Taleo Playwright adapters through the opt-in `[automation]` extra. They fail closed, human challenges stay manual, and `submitted` requires recorded confirmation evidence.
-++- Submission: Tier-0 email plus Greenhouse, Lever, Ashby, Taleo, and Workday Playwright adapters through the opt-in `[automation]` extra. They fail closed, human challenges stay manual, and `submitted` requires recorded confirmation evidence.
-+ - 9-check gate report per job (`GET /api/jobs/{id}/gates`), full audit (`/audit`), JSON export (`/api/export.json`).
-+ - See `docs/CONSOLIDATION.md` for the decision record. Fill in `.env` from `.env.example` before enabling live sends.
-+ 
-+@@ -41,7 +41,7 @@
-+ 
-+ ## Shared multi-page wizard
-+ 
-+-Greenhouse, Lever, Ashby, and Taleo share one bounded browser wizard instead of separate page loops. The engine can traverse accessible Next and Review steps, inspect iframe-hosted forms, extract questions on every page, retry one recoverable validation cycle, and stop at the final Submit boundary during dry runs.
-++Greenhouse, Lever, Ashby, Taleo, and Workday share one bounded browser wizard instead of separate page loops. The engine can traverse accessible Next and Review steps, inspect iframe-hosted forms, extract questions on every page, retry one recoverable validation cycle, and stop at the final Submit boundary during dry runs.
-+ 
-+ Safety controls include structure and URL loop detection, total-step caps, post-fill CAPTCHA/MFA/assessment/account-wall checks, manual handling for legal declarations and demographic self-identification, redacted step journals, and locally stored screenshots with candidate text blurred during capture. Final submission still requires the live environment gate, all submission gates, and confirmation evidence.
-+ 
-+@@ -52,6 +52,12 @@
-+ 
-+ Existing candidate accounts may be authenticated only with the external `taleo` credential provider. Account creation, CAPTCHA, MFA, assessments, legal declarations, demographic self-identification, and unknown required questions stop for human action. Dry runs traverse reachable Taleo steps but never click final Submit.
-+ 
-++## Workday adapter v1
-++
-++Workday support recognizes Candidate Experience job URLs on `myworkdayjobs.com`, parses tenant, cluster, site, and requisition identifiers into query-free evidence, follows one bounded Apply transition, and uses the shared wizard for every later Next, Review, validation, and final Submit decision. Generic Workday corporate pages and tenant home pages are not classified as applications.
-++
-++Existing candidate accounts may be authenticated only through an external `workday` credential profile. The adapter never creates candidate accounts, guesses custom-dropdown choices, handles MFA codes, answers assessments, or attests legal or demographic declarations. React-style comboboxes require one exact approved answer, an unambiguous option match, and verified rendered selection. Dry runs can traverse reachable steps but never click final Submit.
-++
-+ ## Recommended Android setup
-+ 
-+ Run in Termux:
-+@@ -176,7 +182,7 @@
-+ 
-+ ## Safety boundary
-+ 
-+-JobSniffing discovers, scores, prepares, and tracks. It does not attempt universal auto-submission. A future submission adapter must be site-specific, dry-run-first, and must observe a confirmation signal before the state can become `submitted`.
-++JobSniffing discovers, scores, prepares, fills, and tracks supported ATS applications. Browser adapters remain site-specific, dry-run-first, fail-closed, and may record `submitted` only after concrete confirmation evidence. Unsupported or uncertified flows remain manual.
-+ 
-+ - [Detailed Android, Termux, and Ubuntu guide](docs/termux.md)
-+ - [Audit and readiness report](docs/audit.md)
-+diff -ruN '--exclude=.git' '--exclude=*.pyc' workday_baseline/JobSniffing-autonomy-taleo-v1-src/app/adapters/submit/dom_kit.py jobsniffing_resume/JobSniffing-autonomy-taleo-v1-src/app/adapters/submit/dom_kit.py
-+--- workday_baseline/JobSniffing-autonomy-taleo-v1-src/app/adapters/submit/dom_kit.py	2026-07-15 17:16:08.000000000 +0000
-++++ jobsniffing_resume/JobSniffing-autonomy-taleo-v1-src/app/adapters/submit/dom_kit.py	2026-07-15 21:50:42.592426332 +0000
-+@@ -160,6 +160,217 @@
-+     return FillResult(False, "select", f"option {answer!r} was not found")
-+ 
-+ 
-++def _visible(locator: Any) -> bool:
-++    try:
-++        return bool(locator.is_visible())
-++    except Exception:  # noqa: BLE001
-++        return True
-++
-++
-++def _locator_value(locator: Any) -> str:
-++    values: list[str] = []
-++    for reader in (
-++        lambda: locator.input_value(),
-++        lambda: locator.get_attribute("value"),
-++        lambda: locator.inner_text(),
-++        lambda: locator.get_attribute("aria-label"),
-++        lambda: locator.get_attribute("data-value"),
-++    ):
-++        try:
-++            value = str(reader() or "").strip()
-++        except Exception:  # noqa: BLE001
-++            continue
-++        if value:
-++            values.append(value)
-++    try:
-++        state = locator.evaluate(
-++            """el => {
-++              const root = el.closest(
-++                '[data-automation-id*="formField"], [data-field], .field-wrapper, ' +
-++                '[class*="select__control"], [class*="select-container"], ' +
-++                '[class*="field-wrapper"], [class*="application-field"]'
-++              ) || el.parentElement;
-++              const hidden = Array.from(root?.querySelectorAll('input[type="hidden"]') || [])
-++                .map(input => input.value || '').filter(Boolean).join(' ');
-++              return [el.textContent || '', root?.textContent || '', hidden].join(' ');
-++            }"""
-++        )
-++        if state:
-++            values.append(str(state))
-++    except Exception:  # noqa: BLE001
-++        pass
-++    return " ".join(values)
-++
-++
-++def _contains_answer(displayed: str, answer: str) -> bool:
-++    shown = normalize_text(displayed)
-++    target = normalize_text(answer)
-++    return bool(shown and target and f" {target} " in f" {shown} ")
-++
-++
-++def _nth(locator: Any, index: int) -> Any:
-++    try:
-++        return locator.nth(index)
-++    except Exception:  # noqa: BLE001
-++        return locator
-++
-++
-++def _combobox_options(scope: Any, combobox: Any) -> list[tuple[Any, str, str]]:
-++    selectors: list[str] = []
-++    for attr in ("aria-controls", "aria-owns"):
-++        try:
-++            controls = str(combobox.get_attribute(attr) or "").strip()
-++        except Exception:  # noqa: BLE001
-++            controls = ""
-++        if controls:
-++            selectors.append(f"#{controls} [role='option']")
-++    selectors.extend(("[role='listbox'] [role='option']", "[role='option']"))
-++
-++    for selector in selectors:
-++        try:
-++            locator = scope.locator(selector)
-++            total = int(locator.count())
-++        except Exception:  # noqa: BLE001
-++            continue
-++        records: list[tuple[Any, str, str]] = []
-++        for index in range(total):
-++            option = _nth(locator, index)
-++            if not _visible(option):
-++                continue
-++            label = ""
-++            value = ""
-++            for reader in (
-++                lambda: option.inner_text(),
-++                lambda: option.get_attribute("aria-label"),
-++                lambda: option.get_attribute("data-value"),
-++                lambda: option.get_attribute("value"),
-++            ):
-++                try:
-++                    candidate = str(reader() or "").strip()
-++                except Exception:  # noqa: BLE001
-++                    continue
-++                if candidate and not label:
-++                    label = candidate
-++            for name in ("data-value", "value"):
-++                try:
-++                    candidate = str(option.get_attribute(name) or "").strip()
-++                except Exception:  # noqa: BLE001
-++                    candidate = ""
-++                if candidate:
-++                    value = candidate
-++                    break
-++            if label or value:
-++                records.append((option, label or value, value or label))
-++        if records:
-++            return records
-++    return []
-++
-++
-++def _match_combobox_option(options: list[tuple[Any, str, str]], answer: str) -> tuple[Any, str, str] | None:
-++    target = normalize_text(answer)
-++    exact = [item for item in options if target in {normalize_text(item[1]), normalize_text(item[2])}]
-++    if len(exact) == 1:
-++        return exact[0]
-++    fuzzy = [
-++        item for item in options
-++        if target and (
-++            target in normalize_text(item[1])
-++            or normalize_text(item[1]) in target
-++            or target in normalize_text(item[2])
-++            or normalize_text(item[2]) in target
-++        )
-++    ]
-++    return fuzzy[0] if len(fuzzy) == 1 else None
-++
-++
-++def _close_combobox(combobox: Any) -> None:
-++    for key in ("Escape", "Tab"):
-++        try:
-++            combobox.press(key)
-++            return
-++        except Exception:  # noqa: BLE001
-++            continue
-++
-++
-++def try_combobox(scope: Any, locator: Any, answer: str) -> FillResult:
-++    """Select one exac
+diff -ruN '--exclude=.git' '--exclude=*.pyc' workday_baseline/JobSniffing-autonomy-taleo-v1-src/CHECKPOINT.md jobsniffing_resume/JobSniffing-autonomy-taleo-v1-src/CHECKPOINT.md
+--- workday_baseline/JobSniffing-autonomy-taleo-v1-src/CHECKPOINT.md	2026-07-15 18:50:32.000000000 +0000
++++ jobsniffing_resume/JobSniffing-autonomy-taleo-v1-src/CHECKPOINT.md	2026-07-15 21:51:28.869796271 +0000
+@@ -1,10 +1,10 @@
+-# Saved continuation checkpoint
++# JobSniffing checkpoint
+ 
+-Repository: `TheHighBrid/JobSniffing`
+-Branch: `autonomy/taleo-v1`
+-Draft PR: `#11`
+-Checkpoint date: `2026-07-15`
+-Verified baseline: `120 tests passing`
+-Next task: `Workday adapter v1`
++Current completed layer: **Workday adapter v1**.
++
++- Branch: `autonomy/workday-v1`
++- Base: `autonomy/taleo-v1`
++- Verified: **134 tests**, FastAPI, HTTP, SQLite, and default-mode smoke checks
++- Next: **iCIMS iframe and SPA adapter v1**
+ 
+ Read `docs/AUTONOMY_PROGRESS.md` and `docs/SPRINT_HANDOFF.md` before continuing.
+diff -ruN '--exclude=.git' '--exclude=*.pyc' workday_baseline/JobSniffing-autonomy-taleo-v1-src/README.md jobsniffing_resume/JobSniffing-autonomy-taleo-v1-src/README.md
+--- workday_baseline/JobSniffing-autonomy-taleo-v1-src/README.md	2026-07-15 18:43:08.000000000 +0000
++++ jobsniffing_resume/JobSniffing-autonomy-taleo-v1-src/README.md	2026-07-15 21:51:28.868724898 +0000
+@@ -25,7 +25,7 @@
+ - Verified candidate profile (per-field source, verification, contexts, permissions; sensitive keys locked to manual approval).
+ - Question engine: safe_auto / adapter_rule / requires_review classification; answers only from the verified profile or the approved QA bank; unknown is never guessed.
+ - Document pipeline: id-tracked master resume facts, reorder-only tailoring, factuality report (source facts, excluded keywords, exaggeration flags), grounded cover letter, ATS-safe ReportLab PDFs.
+-- Submission: Tier-0 email plus Greenhouse, Lever, Ashby, and Taleo Playwright adapters through the opt-in `[automation]` extra. They fail closed, human challenges stay manual, and `submitted` requires recorded confirmation evidence.
++- Submission: Tier-0 email plus Greenhouse, Lever, Ashby, Taleo, and Workday Playwright adapters through the opt-in `[automation]` extra. They fail closed, human challenges stay manual, and `submitted` requires recorded confirmation evidence.
+ - 9-check gate report per job (`GET /api/jobs/{id}/gates`), full audit (`/audit`), JSON export (`/api/export.json`).
+ - See `docs/CONSOLIDATION.md` for the decision record. Fill in `.env` from `.env.example` before enabling live sends.
+ 
+@@ -41,7 +41,7 @@
+ 
+ ## Shared multi-page wizard
+ 
+-Greenhouse, Lever, Ashby, and Taleo share one bounded browser wizard instead of separate page loops. The engine can traverse accessible Next and Review steps, inspect iframe-hosted forms, extract questions on every page, retry one recoverable validation cycle, and stop at the final Submit boundary during dry runs.
++Greenhouse, Lever, Ashby, Taleo, and Workday share one bounded browser wizard instead of separate page loops. The engine can traverse accessible Next and Review steps, inspect iframe-hosted forms, extract questions on every page, retry one recoverable validation cycle, and stop at the final Submit boundary during dry runs.
+ 
+ Safety controls include structure and URL loop detection, total-step caps, post-fill CAPTCHA/MFA/assessment/account-wall checks, manual handling for legal declarations and demographic self-identification, redacted step journals, and locally stored screenshots with candidate text blurred during capture. Final submission still requires the live environment gate, all submission gates, and confirmation evidence.
+ 
+@@ -52,6 +52,12 @@
+ 
+ Existing candidate accounts may be authenticated only with the external `taleo` credential provider. Account creation, CAPTCHA, MFA, assessments, legal declarations, demographic self-identification, and unknown required questions stop for human action. Dry runs traverse reachable Taleo steps but never click final Submit.
+ 
++## Workday adapter v1
++
++Workday support recognizes Candidate Experience job URLs on `myworkdayjobs.com`, parses tenant, cluster, site, and requisition identifiers into query-free evidence, follows one bounded Apply transition, and uses the shared wizard for every later Next, Review, validation, and final Submit decision. Generic Workday corporate pages and tenant home pages are not classified as applications.
++
++Existing candidate accounts may be authenticated only through an external `workday` credential profile. The adapter never creates candidate accounts, guesses custom-dropdown choices, handles MFA codes, answers assessments, or attests legal or demographic declarations. React-style comboboxes require one exact approved answer, an unambiguous option match, and verified rendered selection. Dry runs can traverse reachable steps but never click final Submit.
++
+ ## Recommended Android setup
+ 
+ Run in Termux:
+@@ -176,7 +182,7 @@
+ 
+ ## Safety boundary
+ 
+-JobSniffing discovers, scores, prepares, and tracks. It does not attempt universal auto-submission. A future submission adapter must be site-specific, dry-run-first, and must observe a confirmation signal before the state can become `submitted`.
++JobSniffing discovers, scores, prepares, fills, and tracks supported ATS applications. Browser adapters remain site-specific, dry-run-first, fail-closed, and may record `submitted` only after concrete confirmation evidence. Unsupported or uncertified flows remain manual.
+ 
+ - [Detailed Android, Termux, and Ubuntu guide](docs/termux.md)
+ - [Audit and readiness report](docs/audit.md)
+diff -ruN '--exclude=.git' '--exclude=*.pyc' workday_baseline/JobSniffing-autonomy-taleo-v1-src/app/adapters/submit/dom_kit.py jobsniffing_resume/JobSniffing-autonomy-taleo-v1-src/app/adapters/submit/dom_kit.py
+--- workday_baseline/JobSniffing-autonomy-taleo-v1-src/app/adapters/submit/dom_kit.py	2026-07-15 17:16:08.000000000 +0000
++++ jobsniffing_resume/JobSniffing-autonomy-taleo-v1-src/app/adapters/submit/dom_kit.py	2026-07-15 21:50:42.592426332 +0000
+@@ -160,6 +160,217 @@
+     return FillResult(False, "select", f"option {answer!r} was not found")
+ 
+ 
++def _visible(locator: Any) -> bool:
++    try:
++        return bool(locator.is_visible())
++    except Exception:  # noqa: BLE001
++        return True
++
++
++def _locator_value(locator: Any) -> str:
++    values: list[str] = []
++    for reader in (
++        lambda: locator.input_value(),
++        lambda: locator.get_attribute("value"),
++        lambda: locator.inner_text(),
++        lambda: locator.get_attribute("aria-label"),
++        lambda: locator.get_attribute("data-value"),
++    ):
++        try:
++            value = str(reader() or "").strip()
++        except Exception:  # noqa: BLE001
++            continue
++        if value:
++            values.append(value)
++    try:
++        state = locator.evaluate(
++            """el => {
++              const root = el.closest(
++                '[data-automation-id*="formField"], [data-field], .field-wrapper, ' +
++                '[class*="select__control"], [class*="select-container"], ' +
++                '[class*="field-wrapper"], [class*="application-field"]'
++              ) || el.parentElement;
++              const hidden = Array.from(root?.querySelectorAll('input[type="hidden"]') || [])
++                .map(input => input.value || '').filter(Boolean).join(' ');
++              return [el.textContent || '', root?.textContent || '', hidden].join(' ');
++            }"""
++        )
++        if state:
++            values.append(str(state))
++    except Exception:  # noqa: BLE001
++        pass
++    return " ".join(values)
++
++
++def _contains_answer(displayed: str, answer: str) -> bool:
++    shown = normalize_text(displayed)
++    target = normalize_text(answer)
++    return bool(shown and target and f" {target} " in f" {shown} ")
++
++
++def _nth(locator: Any, index: int) -> Any:
++    try:
++        return locator.nth(index)
++    except Exception:  # noqa: BLE001
++        return locator
++
++
++def _combobox_options(scope: Any, combobox: Any) -> list[tuple[Any, str, str]]:
++    selectors: list[str] = []
++    for attr in ("aria-controls", "aria-owns"):
++        try:
++            controls = str(combobox.get_attribute(attr) or "").strip()
++        except Exception:  # noqa: BLE001
++            controls = ""
++        if controls:
++            selectors.append(f"#{controls} [role='option']")
++    selectors.extend(("[role='listbox'] [role='option']", "[role='option']"))
++
++    for selector in selectors:
++        try:
++            locator = scope.locator(selector)
++            total = int(locator.count())
++        except Exception:  # noqa: BLE001
++            continue
++        records: list[tuple[Any, str, str]] = []
++        for index in range(total):
++            option = _nth(locator, index)
++            if not _visible(option):
++                continue
++            label = ""
++            value = ""
++            for reader in (
++                lambda: option.inner_text(),
++                lambda: option.get_attribute("aria-label"),
++                lambda: option.get_attribute("data-value"),
++                lambda: option.get_attribute("value"),
++            ):
++                try:
++                    candidate = str(reader() or "").strip()
++                except Exception:  # noqa: BLE001
++                    continue
++                if candidate and not label:
++                    label = candidate
++            for name in ("data-value", "value"):
++                try:
++                    candidate = str(option.get_attribute(name) or "").strip()
++                except Exception:  # noqa: BLE001
++                    candidate = ""
++                if candidate:
++                    value = candidate
++                    break
++            if label or value:
++                records.append((option, label or value, value or label))
++        if records:
++            return records
++    return []
++
++
++def _match_combobox_option(options: list[tuple[Any, str, str]], answer: str) -> tuple[Any, str, str] | None:
++    target = normalize_text(answer)
++    exact = [item for item in options if target in {normalize_text(item[1]), normalize_text(item[2])}]
++    if len(exact) == 1:
++        return exact[0]
++    fuzzy = [
++        item for item in options
++        if target and (
++            target in normalize_text(item[1])
++            or normalize_text(item[1]) in target
++            or target in normalize_text(item[2])
++            or normalize_text(item[2]) in target
++        )
++    ]
++    return fuzzy[0] if len(fuzzy) == 1 else None
++
++
++def _close_combobox(combobox: Any) -> None:
++    for key in ("Escape", "Tab"):
++        try:
++            combobox.press(key)
++            return
++        except Exception:  # noqa: BLE001
++            continue
++
++
++def try_combobox(scope: Any, locator: Any, answer: str) -> FillResult:
++    """Select one exac
