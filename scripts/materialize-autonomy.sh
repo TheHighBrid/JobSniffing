@@ -19,6 +19,11 @@ if [[ ! -f overlays/credentials-v1/apply.sh || ! -f overlays/credentials-v1/fina
   exit 1
 fi
 
+if [[ ! -f overlays/wizard-v1/apply.sh || ! -f overlays/wizard-v1/finalize.sh ]]; then
+  echo "Missing transparent wizard-v1 overlay" >&2
+  exit 1
+fi
+
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
@@ -28,6 +33,8 @@ cp -a "$TMP_DIR/JobSniffing/." ./
 cat .autonomy-current.part-* | base64 --decode | tar -xzf -
 bash overlays/credentials-v1/apply.sh
 bash overlays/credentials-v1/finalize.sh
+bash overlays/wizard-v1/apply.sh
+bash overlays/wizard-v1/finalize.sh
 
 find . -type d -name __pycache__ -prune -exec rm -rf {} +
 rm -rf .pytest_cache jobsniffing.egg-info data
@@ -41,9 +48,9 @@ rm -f .autonomy-current.part-*
 rm -f .autonomy-phase1.tar.gz.b64
 rm -f jobsniffing-consolidation-v1.zip jobsniffing-consolidation-v1.bundle
 rm -f .github/workflows/autonomy-bootstrap.yml
-rm -rf overlays/credentials-v1
+rm -rf overlays/credentials-v1 overlays/wizard-v1
 
 echo
-echo "Autonomy source tree with external credentials materialized and verified."
+echo "Autonomy source tree with credentials and shared wizard materialized and verified."
 echo "Review with: git status && git diff --stat"
 echo "Then commit and push only after review."
