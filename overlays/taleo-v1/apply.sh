@@ -7,7 +7,6 @@ for path in \
   app/adapters/submit/taleo_playwright.py \
   app/services/submission_service.py \
   app/domain/schemas.py \
-  app/main.py \
   scripts/init-credentials.sh \
   tests/unit/test_taleo_adapter.py \
   docs/credentials.md \
