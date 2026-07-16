@@ -1,5 +1,6 @@
 name: tests
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
+
 jobs:
   pytest:
     runs-on: ubuntu-latest
@@ -15,3 +16,17 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e '.[test]'
       - run: python -m pytest -q
+
+  workday-materialization:
+    if: github.ref == 'refs/heads/autonomy/workday-v1' || github.head_ref == 'autonomy/workday-v1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Clone exact Workday branch and verify checked-in source
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git clone --quiet --depth 1 --branch autonomy/workday-v1 "https://github.com/${REPOSITORY}.git" workday
+          cd workday
+          bash scripts/materialize-autonomy.sh
