@@ -1,0 +1,5 @@
+local_source=verified
+local_tests=147
+remote_overlay=complete
+remote_base_materialization=required
+next=smartrecruiters-v1
