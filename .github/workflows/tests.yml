@@ -22,10 +22,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
-      - name: Verify checked-in Workday source tree
-        run: bash scripts/materialize-autonomy.sh
+      - name: Clone exact Workday branch and verify checked-in source
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git clone --quiet --depth 1 --branch autonomy/workday-v1 "https://github.com/${REPOSITORY}.git" workday
+          cd workday
+          bash scripts/materialize-autonomy.sh
