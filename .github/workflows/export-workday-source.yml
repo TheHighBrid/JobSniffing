@@ -23,23 +23,43 @@ jobs:
       - name: Decode and inventory Workday overlay
         shell: bash
         run: |
-          set -euo pipefail
+          set -u
           rm -rf workday-port-source
           mkdir -p workday-port-source/overlay
           cp -a overlays/workday-v1/. workday-port-source/overlay/
-          : > workday-port-source/workday-v1.patch
-          for part in overlays/workday-v1/workday-v1.patch.b64.part-*; do
-            base64 --decode "$part" >> workday-port-source/workday-v1.patch
-          done
-          file workday-port-source/workday-v1.patch \
-            | tee workday-port-source/decoded-file-type.txt
-          sha256sum workday-port-source/workday-v1.patch \
-            | tee workday-port-source/decoded-sha256.txt
-          grep '^diff ' workday-port-source/workday-v1.patch \
-            > workday-port-source/changed-paths.txt || true
+          python - <<'PY'
+          import base64
+          import glob
+          import hashlib
+          from pathlib import Path
+
+          output = Path('workday-port-source')
+          parts = sorted(glob.glob('overlays/workday-v1/workday-v1.patch.b64.part-*'))
+          encoded = ''.join(Path(path).read_text() for path in parts)
+          compact = ''.join(encoded.split())
+          compact += '=' * ((4 - len(compact) % 4) % 4)
+          (output / 'transport-part-count.txt').write_text(str(len(parts)))
+          (output / 'transport-character-count.txt').write_text(str(len(compact)))
+          try:
+              decoded = base64.b64decode(compact, validate=False)
+              (output / 'workday-v1.patch').write_bytes(decoded)
+              (output / 'decoded-sha256.txt').write_text(hashlib.sha256(decoded).hexdigest())
+              (output / 'decode-status.txt').write_text('success')
+          except Exception as exc:
+              (output / 'decode-status.txt').write_text(f'{type(exc).__name__}: {exc}')
+              (output / 'combined-transport.txt').write_text(compact)
+          PY
+          if [ -f workday-port-source/workday-v1.patch ]; then
+            file workday-port-source/workday-v1.patch \
+              | tee workday-port-source/decoded-file-type.txt
+            grep '^diff ' workday-port-source/workday-v1.patch \
+              > workday-port-source/changed-paths.txt || true
+          fi
           find workday-port-source -type f -print | sort > workday-port-source/inventory.txt
+          exit 0
 
       - name: Upload decoded Workday overlay
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: jobsniffing-workday-decoded-overlay
