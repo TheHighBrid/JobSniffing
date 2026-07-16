@@ -24,10 +24,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
+          fetch-depth: 1
+          show-progress: false
       - name: Materialize and verify Workday stack
-        run: bash scripts/materialize-autonomy.sh
+        run: |
+          python --version
+          bash scripts/materialize-autonomy.sh
