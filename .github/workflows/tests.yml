@@ -22,11 +22,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-          show-progress: false
-      - name: Materialize and verify Workday stack
+      - name: Clone exact Workday branch, materialize, and verify
+        env:
+          REPOSITORY: ${{ github.repository }}
         run: |
+          set -euo pipefail
+          git clone --quiet --depth 1 --branch autonomy/workday-v1 "https://github.com/${REPOSITORY}.git" workday
+          cd workday
           python --version
           bash scripts/materialize-autonomy.sh
