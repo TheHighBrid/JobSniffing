@@ -27,17 +27,16 @@ jobs:
           rm -rf workday-port-source
           mkdir -p workday-port-source/overlay
           cp -a overlays/workday-v1/. workday-port-source/overlay/
-          cat overlays/workday-v1/workday-v1.patch.b64.part-* \
-            | base64 --decode > workday-port-source/workday-v1-decoded.bin
-          file workday-port-source/workday-v1-decoded.bin \
+          : > workday-port-source/workday-v1.patch
+          for part in overlays/workday-v1/workday-v1.patch.b64.part-*; do
+            base64 --decode "$part" >> workday-port-source/workday-v1.patch
+          done
+          file workday-port-source/workday-v1.patch \
             | tee workday-port-source/decoded-file-type.txt
-          sha256sum workday-port-source/workday-v1-decoded.bin \
+          sha256sum workday-port-source/workday-v1.patch \
             | tee workday-port-source/decoded-sha256.txt
-          python - <<'PY'
-          from pathlib import Path
-          value = Path('workday-port-source/workday-v1-decoded.bin').read_bytes()
-          Path('workday-port-source/decoded-prefix.hex').write_text(value[:128].hex())
-          PY
+          grep '^diff ' workday-port-source/workday-v1.patch \
+            > workday-port-source/changed-paths.txt || true
           find workday-port-source -type f -print | sort > workday-port-source/inventory.txt
 
       - name: Upload decoded Workday overlay
