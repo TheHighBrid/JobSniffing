@@ -1,0 +1,39 @@
+name: Export Workday source
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/export-workday-source.yml"
+      - "jobsniffing-consolidation-v1.zip"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v4
+
+      - name: Extract consolidation archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf extracted-workday-source
+          mkdir -p extracted-workday-source
+          unzip -q jobsniffing-consolidation-v1.zip -d extracted-workday-source
+          find extracted-workday-source -type f -print | sort > extracted-workday-source/inventory.txt
+          grep -RIlE 'workday|myworkdayjobs|wday/cxs|wd[0-9]+\.myworkdayjobs' extracted-workday-source \
+            | sort > extracted-workday-source/workday-matches.txt || true
+          echo "Workday-related files:"
+          cat extracted-workday-source/workday-matches.txt || true
+
+      - name: Upload extracted source
+        uses: actions/upload-artifact@v4
+        with:
+          name: jobsniffing-workday-source
+          path: extracted-workday-source
+          if-no-files-found: error
+          retention-days: 7
