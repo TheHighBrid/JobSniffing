@@ -1,0 +1,31 @@
+name: Verify icims-v1 overlay
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: autonomy/icims-v1
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Require materialized Workday base, apply iCIMS, and verify
+        run: |
+          test -f app/adapters/submit/workday_playwright.py || {
+            echo 'Complete Workday v1 source must be materialized before applying the iCIMS overlay.' >&2
+            exit 1
+          }
+          bash overlays/icims-v1/apply.sh
+          bash overlays/icims-v1/finalize.sh
+          python -m pip install -e '.[test]'
+          sh scripts/verify.sh
