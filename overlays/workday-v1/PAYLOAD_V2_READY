@@ -1,4 +1,3 @@
-Workday payload v2
-compressed_sha256=68f4c18d9bd7cd43684c578cb26f497b5b84a07e542f2cb9916a034756f7417e
-patch_sha256=82c23cfdf1e971912525918f48d1f7e316afc6c3c1957dc907b76c7f400d9b57
-parts=6
+Workday payload v3 source checkpoint pending
+source_xz_sha256=39107edc1e495e23eb7a7661ca61d096e921b9a5f0c403d70b9c72ee6dc01325
+source_tree_tests=134
