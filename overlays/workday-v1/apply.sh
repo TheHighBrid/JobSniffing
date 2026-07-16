@@ -3,29 +3,32 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$ROOT"
 
-PREFIX_PARTS=(
-  overlays/workday-v1/workday-v1.patch.b64.part-00
-  overlays/workday-v1/workday-v1.patch.b64.part-01
+PAYLOAD_PARTS=(
+  overlays/workday-v1/payload-gz.part-00
+  overlays/workday-v1/payload-gz.part-01
+  overlays/workday-v1/payload-gz.part-02
+  overlays/workday-v1/payload-gz-tail.part-00
+  overlays/workday-v1/payload-gz-tail.part-01
+  overlays/workday-v1/payload-gz-tail.part-02
 )
-TAIL_PARTS=(overlays/workday-v1/workday-v1.tail.part-*)
 
-printf 'Workday payload parts: prefix=%s tail=%s\n' "${#PREFIX_PARTS[@]}" "${#TAIL_PARTS[@]}"
-if [[ ! -f "${PREFIX_PARTS[0]}" || ! -f "${PREFIX_PARTS[1]}" || ${#TAIL_PARTS[@]} -ne 12 || ! -f "${TAIL_PARTS[0]}" ]]; then
-  echo "Missing one or more Workday payload parts" >&2
-  printf '%s\n' "${PREFIX_PARTS[@]}" "${TAIL_PARTS[@]}" >&2
-  exit 1
-fi
+for part in "${PAYLOAD_PARTS[@]}"; do
+  test -f "$part" || { echo "Missing Workday payload part: $part" >&2; exit 1; }
+done
 
 ENCODED_FILE="$(mktemp)"
+GZIP_FILE="$(mktemp)"
 PATCH_FILE="$(mktemp)"
-trap 'rm -f "$ENCODED_FILE" "$PATCH_FILE"' EXIT
+trap 'rm -f "$ENCODED_FILE" "$GZIP_FILE" "$PATCH_FILE"' EXIT
 
-cat "${PREFIX_PARTS[@]}" "${TAIL_PARTS[@]}" > "$ENCODED_FILE"
-printf 'Encoded payload bytes: '
+cat "${PAYLOAD_PARTS[@]}" > "$ENCODED_FILE"
+printf 'Workday encoded payload bytes: '
 wc -c < "$ENCODED_FILE"
-base64 --decode "$ENCODED_FILE" > "$PATCH_FILE"
-printf 'Decoded patch SHA-256: '
-sha256sum "$PATCH_FILE"
+base64 --decode "$ENCODED_FILE" > "$GZIP_FILE"
+printf '%s  %s\n' \
+  "68f4c18d9bd7cd43684c578cb26f497b5b84a07e542f2cb9916a034756f7417e" \
+  "$GZIP_FILE" | sha256sum -c -
+gzip --decompress --stdout "$GZIP_FILE" > "$PATCH_FILE"
 printf '%s  %s\n' \
   "82c23cfdf1e971912525918f48d1f7e316afc6c3c1957dc907b76c7f400d9b57" \
   "$PATCH_FILE" | sha256sum -c -
