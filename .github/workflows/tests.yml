@@ -1,5 +1,5 @@
 name: tests
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
   pytest:
@@ -17,17 +17,28 @@ jobs:
       - run: python -m pip install -e '.[test]'
       - run: python -m pytest -q
 
-  workday-materialization:
+  workday-source-checkpoint:
     if: github.ref == 'refs/heads/autonomy/workday-v1' || github.head_ref == 'autonomy/workday-v1'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Clone exact Workday branch, materialize, and verify
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Download, checksum, extract, and verify the complete Workday source
         env:
-          REPOSITORY: ${{ github.repository }}
+          DRIVE_FILE_ID: 1riRm_xWdiFEpPzjtMfdpxr3MDqHTb_4H
+          SOURCE_SHA256: 39107edc1e495e23eb7a7661ca61d096e921b9a5f0c403d70b9c72ee6dc01325
         run: |
           set -euo pipefail
-          git clone --quiet --depth 1 --branch autonomy/workday-v1 "https://github.com/${REPOSITORY}.git" workday
-          cd workday
-          python --version
-          bash scripts/materialize-autonomy.sh
+          mkdir -p workday-source
+          curl --fail --location --retry 3 --retry-all-errors \
+            "https://drive.usercontent.google.com/download?id=${DRIVE_FILE_ID}&export=download&confirm=t" \
+            --output /tmp/jobsniffing-workday-v1-source.tar.xz
+          printf '%s  %s\n' "$SOURCE_SHA256" /tmp/jobsniffing-workday-v1-source.tar.xz | sha256sum -c -
+          tar -xJf /tmp/jobsniffing-workday-v1-source.tar.xz -C workday-source
+          cd workday-source
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[test]'
+          python -m pytest -q
+          sh scripts/verify.sh
