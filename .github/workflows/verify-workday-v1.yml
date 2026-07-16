@@ -2,6 +2,13 @@ name: Verify workday-v1 materialization
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - autonomy/workday-v1
+    paths:
+      - 'overlays/workday-v1/**'
+      - 'scripts/materialize-autonomy.sh'
+      - '.github/workflows/verify-workday-v1.yml'
 
 permissions:
   contents: read
