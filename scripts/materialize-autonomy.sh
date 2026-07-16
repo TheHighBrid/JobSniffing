@@ -4,33 +4,22 @@ set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$ROOT"
 
-if [[ ! -f jobsniffing-consolidation-v1.zip ]]; then
-  echo "Missing jobsniffing-consolidation-v1.zip" >&2
-  exit 1
-fi
+required_files=(
+  app/adapters/submit/dom_kit.py
+  app/adapters/submit/wizard.py
+  app/adapters/submit/taleo_playwright.py
+  app/adapters/submit/workday_playwright.py
+  app/services/credential_service.py
+  tests/unit/test_wizard_engine.py
+  tests/unit/test_taleo_adapter.py
+  tests/unit/test_workday_adapter.py
+)
 
-if [[ ! -f .autonomy-current.part-00 || ! -f .autonomy-current.part-02h ]]; then
-  echo "Missing one or more autonomy overlay parts" >&2
-  exit 1
-fi
-
-for layer in credentials-v1 wizard-v1 taleo-v1 workday-v1; do
-  if [[ ! -f "overlays/$layer/apply.sh" || ! -f "overlays/$layer/finalize.sh" ]]; then
-    echo "Missing transparent $layer overlay" >&2
+for path in "${required_files[@]}"; do
+  if [[ ! -f "$path" ]]; then
+    echo "Materialized source is incomplete: missing $path" >&2
     exit 1
   fi
-done
-
-TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TMP_DIR"' EXIT
-
-unzip -q jobsniffing-consolidation-v1.zip -d "$TMP_DIR"
-cp -a "$TMP_DIR/JobSniffing/." ./
-
-cat .autonomy-current.part-* | base64 --decode | tar -xzf -
-for layer in credentials-v1 wizard-v1 taleo-v1 workday-v1; do
-  bash "overlays/$layer/apply.sh"
-  bash "overlays/$layer/finalize.sh"
 done
 
 find . -type d -name __pycache__ -prune -exec rm -rf {} +
@@ -41,13 +30,5 @@ python -m pip install --upgrade pip
 python -m pip install -e '.[test]'
 sh scripts/verify.sh
 
-rm -f .autonomy-current.part-*
-rm -f .autonomy-phase1.tar.gz.b64
-rm -f jobsniffing-consolidation-v1.zip jobsniffing-consolidation-v1.bundle
-rm -f .github/workflows/autonomy-bootstrap.yml
-rm -rf overlays/credentials-v1 overlays/wizard-v1 overlays/taleo-v1 overlays/workday-v1
-
 echo
-echo "Autonomy source tree through Workday v1 materialized and verified."
-echo "Review with: git status && git diff --stat"
-echo "Then commit and push only after review."
+echo "Checked-in autonomy source through Workday v1 verified successfully."
