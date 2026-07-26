@@ -1,0 +1,8 @@
+version=1
+base=autonomy/workday-v1
+branch=autonomy/icims-v1
+patch_sha256=3339cfb5c89c32ebfea42cf0ec74874f2be772a0f04d7dda13ed6ad9f92f3826
+compressed_sha256=a8c4b2301182c10b856355eb3f3aac432c50974f2cdf048e1154c98a25218ae3
+parts=2
+strip=5
+verified_tests=147
