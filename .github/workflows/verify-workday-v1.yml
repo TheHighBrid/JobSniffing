@@ -1,0 +1,30 @@
+name: Verify workday-v1 materialization
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - autonomy/workday-v1
+    paths:
+      - 'overlays/workday-v1/**'
+      - 'scripts/materialize-autonomy.sh'
+      - '.github/workflows/verify-workday-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: autonomy/workday-v1
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Materialize and verify the stacked source tree
+        run: bash scripts/materialize-autonomy.sh
